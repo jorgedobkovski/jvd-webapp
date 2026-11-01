@@ -1,4 +1,4 @@
-import { formatarData, formatarDataHora, hoje } from './datas';
+import { esteAno, esteMes, formatarData, formatarDataHora, hoje, mesPassado } from './datas';
 
 describe('datas', () => {
   it('formata aaaa-mm-dd como dd/mm/aaaa sem deslocar o dia', () => {
@@ -25,5 +25,15 @@ describe('datas', () => {
     vi.setSystemTime(new Date(2026, 10, 1, 23, 59));
     expect(hoje()).toBe('2026-11-01');
     vi.useRealTimers();
+  });
+
+  it('períodos rápidos: este mês, mês passado (inclusive virada de ano e bissexto) e este ano', () => {
+    expect(esteMes('2026-11-15')).toEqual({ de: '2026-11-01', ate: '2026-11-30' });
+    expect(esteMes('2026-02-10')).toEqual({ de: '2026-02-01', ate: '2026-02-28' });
+    expect(esteMes('2028-02-10')).toEqual({ de: '2028-02-01', ate: '2028-02-29' });
+    expect(mesPassado('2026-11-15')).toEqual({ de: '2026-10-01', ate: '2026-10-31' });
+    expect(mesPassado('2026-01-05')).toEqual({ de: '2025-12-01', ate: '2025-12-31' });
+    expect(mesPassado('2026-03-31')).toEqual({ de: '2026-02-01', ate: '2026-02-28' });
+    expect(esteAno('2026-11-15')).toEqual({ de: '2026-01-01', ate: '2026-12-31' });
   });
 });

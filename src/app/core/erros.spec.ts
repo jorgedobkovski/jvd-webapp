@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { lerErro } from './erros';
+import { lerErro, lerErroDeArquivo } from './erros';
 
 describe('lerErro', () => {
   it('usa o detail e o código do ProblemDetails', () => {
@@ -31,5 +31,21 @@ describe('lerErro', () => {
   it('corpo inesperado ou erro que não é HTTP cai na mensagem genérica', () => {
     expect(lerErro(new HttpErrorResponse({ status: 400, error: 'texto' })).mensagem).toBe('Não foi possível concluir a operação.');
     expect(lerErro(new Error('x')).mensagens).toEqual(['Não foi possível concluir a operação.']);
+  });
+
+  it('erro de arquivo (Blob com JSON): devolve a mensagem fixa da API, não a genérica', async () => {
+    const corpo = new Blob([JSON.stringify({ codigo: 'validacao', detail: 'A exportação passa de 20.000 relatórios. Refine o período.', erros: [{ codigo: 'validacao', mensagem: 'A exportação passa de 20.000 relatórios. Refine o período.' }] })]);
+
+    const erro = await lerErroDeArquivo(new HttpErrorResponse({ status: 400, error: corpo }));
+
+    expect(erro.status).toBe(400);
+    expect(erro.mensagem).toBe('A exportação passa de 20.000 relatórios. Refine o período.');
+  });
+
+  it('erro de arquivo com Blob que não é JSON, ou erro que não é Blob, usa o tratamento comum', async () => {
+    expect((await lerErroDeArquivo(new HttpErrorResponse({ status: 400, error: new Blob(['<html>']) }))).mensagem).toBe('Não foi possível concluir a operação.');
+    expect((await lerErroDeArquivo(new HttpErrorResponse({ status: 500, error: new Blob(['{"detail":"interno"}']) }))).mensagem).toContain('O servidor encontrou um problema');
+    expect((await lerErroDeArquivo(new HttpErrorResponse({ status: 403 }))).mensagem).toContain('permissão');
+    expect((await lerErroDeArquivo(new Error('x'))).mensagens).toEqual(['Não foi possível concluir a operação.']);
   });
 });
