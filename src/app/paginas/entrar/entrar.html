@@ -1,0 +1,59 @@
+<main class="flex min-h-dvh items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+  <section class="w-full max-w-sm rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-50">JVD Sistema</h1>
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Entre com seu e-mail e senha.</p>
+
+    <form class="mt-6 space-y-4" novalidate (submit)="$event.preventDefault(); entrar()">
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-800 dark:text-slate-100">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          autocomplete="username"
+          inputmode="email"
+          class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-base text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50"
+          [formField]="formulario.email"
+          [attr.aria-invalid]="formulario.email().touched() && formulario.email().invalid()"
+          aria-describedby="email-erro"
+        />
+        <p id="email-erro" class="mt-1 text-sm text-red-700 dark:text-red-300">
+          @if (formulario.email().touched()) {
+            @for (e of formulario.email().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="senha" class="block text-sm font-medium text-slate-800 dark:text-slate-100">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          autocomplete="current-password"
+          class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-base text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50"
+          [formField]="formulario.senha"
+          [attr.aria-invalid]="formulario.senha().touched() && formulario.senha().invalid()"
+          aria-describedby="senha-erro"
+        />
+        <p id="senha-erro" class="mt-1 text-sm text-red-700 dark:text-red-300">
+          @if (formulario.senha().touched()) {
+            @for (e of formulario.senha().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <p role="alert" class="text-sm font-medium text-red-700 dark:text-red-300">{{ erro() }}</p>
+
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-blue-700 px-4 py-2.5 text-base font-semibold text-white hover:bg-blue-800 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 disabled:opacity-60"
+        [disabled]="enviando()"
+      >
+        {{ enviando() ? 'Entrando…' : 'Entrar' }}
+      </button>
+    </form>
+  </section>
+</main>
