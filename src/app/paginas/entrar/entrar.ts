@@ -2,12 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { FormField, email, form, maxLength, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { lerErro } from '../../core/erros';
+import { BotaoDeTema } from '../../compartilhado/botao-de-tema';
 import { retornoSeguro } from '../../core/guardas';
 import { Sessao } from '../../core/sessao';
 
 @Component({
   selector: 'jvd-entrar',
-  imports: [FormField],
+  imports: [FormField, BotaoDeTema],
   templateUrl: './entrar.html',
 })
 export class Entrar {
