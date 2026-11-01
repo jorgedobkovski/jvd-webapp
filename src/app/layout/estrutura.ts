@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Sessao } from '../core/sessao';
 
 /** Moldura da área logada: cabeçalho com o usuário, "trocar senha" e "sair", e o conteúdo da rota. */
 @Component({
   selector: 'jvd-estrutura',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="flex min-h-dvh flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -19,6 +19,16 @@ import { Sessao } from '../core/sessao';
             </button>
           </div>
         </div>
+        <nav class="border-t border-slate-200 dark:border-slate-800" aria-label="Principal">
+          <ul class="mx-auto flex max-w-5xl gap-1 px-4 py-1 text-sm font-medium">
+            <li>
+              <a routerLink="/clientes" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Clientes</a>
+            </li>
+            <li>
+              <a routerLink="/equipamentos" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Equipamentos</a>
+            </li>
+          </ul>
+        </nav>
       </header>
       <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         <router-outlet />

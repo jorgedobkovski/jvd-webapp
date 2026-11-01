@@ -1,0 +1,115 @@
+<p class="mb-3"><a routerLink="/clientes" class="underline">← Clientes</a></p>
+
+@if (naoEncontrado()) {
+  <div class="alerta-erro" role="alert">
+    <p>Cliente não encontrado.</p>
+  </div>
+} @else if (cliente.hasValue()) {
+  @let c = cliente.value();
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">{{ c.nomeRazaoSocial }}</h1>
+      @if (c.nomeFantasia) {
+        <p class="text-slate-700 dark:text-slate-200">{{ c.nomeFantasia }}</p>
+      }
+      <p class="mt-1 flex flex-wrap gap-1">
+        @if (c.cadastroIncompleto) {
+          <span class="etiqueta">Incompleto</span>
+        }
+        @if (!c.ativo) {
+          <span class="etiqueta">Inativo</span>
+        }
+        <span class="etiqueta">{{ c.origem === 'Importado' ? 'Importado' : 'Manual' }}</span>
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      @if (c.ativo || sessao.ehGestor()) {
+        <a [routerLink]="['/clientes', c.id, 'editar']" class="botao-primario">Editar</a>
+      }
+      @if (sessao.ehGestor()) {
+        @if (!confirmando()) {
+          <button type="button" class="botao-secundario" (click)="confirmando.set(true)">{{ c.ativo ? 'Desativar' : 'Reativar' }}</button>
+        }
+      }
+    </div>
+  </div>
+
+  @if (confirmando()) {
+    <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar alteração de situação">
+      <p>
+        {{ c.ativo ? 'Desativar este cliente? Técnicos deixam de vê-lo e de emitir relatórios para ele.' : 'Reativar este cliente?' }}
+      </p>
+      <div class="mt-2 flex gap-2">
+        <button type="button" [class]="c.ativo ? 'botao-perigo' : 'botao-primario'" [disabled]="trabalhando()" (click)="alternar(!c.ativo)">
+          {{ c.ativo ? 'Sim, desativar' : 'Sim, reativar' }}
+        </button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set(false)">Voltar</button>
+      </div>
+    </div>
+  }
+  @if (erro()) {
+    <p class="alerta-erro mt-3" role="alert">{{ erro() }}</p>
+  }
+
+  <jvd-avisos-do-cadastro [avisos]="avisos()" rotaBase="/clientes" />
+
+  <dl class="cartao mt-4 grid gap-3 sm:grid-cols-2">
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">CPF/CNPJ</dt>
+      <dd>{{ c.documento ? documento(c.documento) : 'Não informado' }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Inscrição estadual ou RG</dt>
+      <dd>{{ c.inscricaoEstadualRg ?? 'Não informado' }}</dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Endereço</dt>
+      <dd>{{ endereco(c) || 'Não informado' }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Telefone</dt>
+      <dd>{{ c.telefone ?? 'Não informado' }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">E-mail</dt>
+      <dd>{{ c.email ?? 'Não informado' }}</dd>
+    </div>
+  </dl>
+
+  <section class="mt-6" aria-labelledby="titulo-equipamentos">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 id="titulo-equipamentos" class="text-xl font-semibold">Equipamentos</h2>
+      @if (c.ativo) {
+        <a routerLink="/equipamentos/novo" [queryParams]="{ clienteId: c.id }" class="botao-secundario">Novo equipamento</a>
+      }
+    </div>
+    @if (equipamentos.isLoading() && !equipamentos.hasValue()) {
+      <p class="mt-2 text-slate-700 dark:text-slate-200">Carregando…</p>
+    } @else if (itensDeEquipamento().length === 0) {
+      <p class="cartao mt-2 text-slate-700 dark:text-slate-200">Nenhum equipamento cadastrado para este cliente.</p>
+    } @else {
+      <ul class="mt-2 grid gap-3">
+        @for (e of itensDeEquipamento(); track e.id) {
+          <li class="cartao">
+            <a [routerLink]="['/equipamentos', e.id, 'editar']" class="block focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+              <span class="block font-semibold">{{ e.descricao }}</span>
+              <span class="block text-sm text-slate-700 dark:text-slate-200">
+                @if (e.numeroSerie) {
+                  Série {{ e.numeroSerie }}
+                }
+                @if (e.numeroInmetro) {
+                  · INMETRO {{ e.numeroInmetro }}
+                }
+              </span>
+              @if (!e.ativo) {
+                <span class="etiqueta mt-1">Inativo</span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+} @else {
+  <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+}
