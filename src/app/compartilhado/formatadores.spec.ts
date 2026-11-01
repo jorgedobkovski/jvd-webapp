@@ -1,4 +1,4 @@
-import { UFS, formatarCep, formatarDocumento, formatarEndereco, soDigitos } from './formatadores';
+import { UFS, formatarCep, formatarDocumento, formatarEndereco, formatarReais, lerPreco, soDigitos } from './formatadores';
 
 describe('formatadores', () => {
   it('soDigitos tira tudo que não é número', () => {
@@ -29,5 +29,22 @@ describe('formatadores', () => {
   it('tem as 27 UFs', () => {
     expect(UFS).toHaveLength(27);
     expect(new Set(UFS).size).toBe(27);
+  });
+
+  it('formata valores em reais; sem valor vira traço', () => {
+    expect(formatarReais(1234.5).replace(/\s/g, ' ')).toBe('R$ 1.234,50');
+    expect(formatarReais(null)).toBe('—');
+    expect(formatarReais(undefined)).toBe('—');
+  });
+
+  it('lê o preço digitado: vírgula ou ponto, até 2 casas; vazio = sem preço; inválido = undefined', () => {
+    expect(lerPreco('150')).toBe(150);
+    expect(lerPreco('150,5')).toBe(150.5);
+    expect(lerPreco('1.234,56')).toBe(1234.56);
+    expect(lerPreco('1234.56')).toBe(1234.56);
+    expect(lerPreco(' 0 ')).toBe(0);
+    expect(lerPreco('')).toBeNull();
+    expect(lerPreco('   ')).toBeNull();
+    for (const ruim of ['abc', '-5', '1,234', '1.2345', '12345678901', '1,2,3', 'R$ 10']) expect(lerPreco(ruim)).toBeUndefined();
   });
 });

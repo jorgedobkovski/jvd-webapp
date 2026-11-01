@@ -1,0 +1,85 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">Catálogo de serviços</h1>
+  <a routerLink="/catalogo/novo" class="botao-primario">Novo serviço</a>
+</div>
+
+<form class="cartao mt-4 grid gap-3 sm:grid-cols-3" (submit)="$event.preventDefault(); buscar()" role="search">
+  <div class="sm:col-span-2">
+    <label for="busca" class="rotulo">Buscar</label>
+    <input id="busca" type="search" class="campo" placeholder="Descrição ou código" autocomplete="off" [formField]="formulario.busca" />
+  </div>
+  <div>
+    <label for="situacao" class="rotulo">Situação</label>
+    <select id="situacao" class="campo" [formField]="formulario.situacao">
+      <option value="todos">Todos</option>
+      <option value="ativos">Ativos</option>
+      <option value="inativos">Inativos</option>
+    </select>
+  </div>
+  <div class="sm:col-span-3">
+    <button type="submit" class="botao-primario w-full sm:w-auto">Buscar</button>
+  </div>
+</form>
+
+<section class="mt-4" aria-live="polite" aria-busy="{{ resultado.isLoading() }}">
+  @if (resultado.error()) {
+    <div class="alerta-erro" role="alert">
+      <p>Não foi possível carregar o catálogo.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="tentarDeNovo()">Tentar de novo</button>
+    </div>
+  } @else if (resultado.isLoading() && !resultado.hasValue()) {
+    <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (itens().length === 0) {
+    <p class="cartao text-slate-700 dark:text-slate-200">Nenhum serviço encontrado.</p>
+  } @else {
+    <ul class="grid gap-3 md:hidden">
+      @for (s of itens(); track s.id) {
+        <li class="cartao">
+          <a [routerLink]="['/catalogo', s.id, 'editar']" class="block focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+            <span class="block text-lg font-semibold">{{ s.descricao }}</span>
+            <span class="block text-sm text-slate-700 dark:text-slate-200">
+              {{ s.codigoOrigem ? 'Código ' + s.codigoOrigem + ' · ' : '' }}{{ reais(s.precoSugerido) }}
+            </span>
+            @if (!s.ativo) {
+              <span class="etiqueta mt-2">Inativo</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="hidden overflow-x-auto md:block">
+      <table class="cartao w-full text-left text-sm">
+        <caption class="sr-only">Catálogo de serviços</caption>
+        <thead>
+          <tr class="border-b border-slate-300 dark:border-slate-700">
+            <th scope="col" class="p-2">Descrição</th>
+            <th scope="col" class="p-2">Código</th>
+            <th scope="col" class="p-2">Preço sugerido</th>
+            <th scope="col" class="p-2">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of itens(); track s.id) {
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <td class="p-2">
+                <a [routerLink]="['/catalogo', s.id, 'editar']" class="font-medium underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+                  {{ s.descricao }}
+                </a>
+              </td>
+              <td class="p-2">{{ s.codigoOrigem ?? '—' }}</td>
+              <td class="p-2">{{ reais(s.precoSugerido) }}</td>
+              <td class="p-2">
+                @if (!s.ativo) {
+                  <span class="etiqueta">Inativo</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <jvd-paginacao [pagina]="pagina()" [tamanho]="tamanho()" [total]="total()" (mudar)="irParaPagina($event)" />
+  }
+</section>

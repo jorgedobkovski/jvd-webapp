@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { exigeSessao, exigeUsuario, soVisitante } from './core/guardas';
+import { exigePerfil, exigeSessao, exigeUsuario, soVisitante } from './core/guardas';
 import { Estrutura } from './layout/estrutura';
 
 export const routes: Routes = [
@@ -19,6 +19,22 @@ export const routes: Routes = [
       { path: 'equipamentos/novo', loadComponent: () => import('./cadastros/equipamentos/equipamento-formulario').then((m) => m.EquipamentoFormulario) },
       { path: 'equipamentos/:id/editar', loadComponent: () => import('./cadastros/equipamentos/equipamento-formulario').then((m) => m.EquipamentoFormulario) },
       { path: 'equipamentos/:id', redirectTo: 'equipamentos/:id/editar' },
+      // Área do gestor: a API também barra o técnico (a guarda só poupa a ida a uma tela que daria 403).
+      {
+        path: '',
+        canActivate: [exigePerfil('Gestor')],
+        children: [
+          { path: 'catalogo', loadComponent: () => import('./cadastros/catalogo/catalogo-lista').then((m) => m.CatalogoLista) },
+          { path: 'catalogo/novo', loadComponent: () => import('./cadastros/catalogo/servico-formulario').then((m) => m.ServicoFormulario) },
+          { path: 'catalogo/:id/editar', loadComponent: () => import('./cadastros/catalogo/servico-formulario').then((m) => m.ServicoFormulario) },
+          { path: 'catalogo/:id', redirectTo: 'catalogo/:id/editar' },
+          { path: 'emissor', loadComponent: () => import('./cadastros/emissor/emissor-formulario').then((m) => m.EmissorFormulario) },
+          { path: 'usuarios', loadComponent: () => import('./cadastros/usuarios/usuarios-lista').then((m) => m.UsuariosLista) },
+          { path: 'usuarios/novo', loadComponent: () => import('./cadastros/usuarios/usuario-formulario').then((m) => m.UsuarioFormulario) },
+          { path: 'usuarios/:id/editar', loadComponent: () => import('./cadastros/usuarios/usuario-formulario').then((m) => m.UsuarioFormulario) },
+          { path: 'usuarios/:id', redirectTo: 'usuarios/:id/editar' },
+        ],
+      },
     ],
   },
   { path: '**', redirectTo: '' },

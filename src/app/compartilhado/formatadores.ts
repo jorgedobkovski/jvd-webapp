@@ -36,3 +36,22 @@ export const UFS = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ',
   'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
 ] as const;
+
+const REAIS = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** "R$ 1.234,50"; sem valor, "—". */
+export function formatarReais(valor: number | null | undefined): string {
+  return valor === null || valor === undefined ? '—' : REAIS.format(valor);
+}
+
+/**
+ * Lê um preço digitado ("150", "150,5", "1.234,56", "1234.56") para número. Aceita no máximo 2 casas decimais
+ * (a API recusa mais casas em vez de arredondar). Vazio = sem preço (`null`); inválido = `undefined`.
+ */
+export function lerPreco(texto: string): number | null | undefined {
+  const limpo = texto.replace(/\s/g, '');
+  if (limpo === '') return null;
+  const normalizado = limpo.includes(',') ? limpo.replace(/\./g, '').replace(',', '.') : limpo;
+  if (!/^\d{1,10}(\.\d{1,2})?$/.test(normalizado)) return undefined;
+  return Number(normalizado);
+}

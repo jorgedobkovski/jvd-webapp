@@ -1,0 +1,140 @@
+<h1 class="text-2xl font-semibold">{{ titulo() }}</h1>
+<p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
+  Estes dados saem no cabeçalho de todo relatório. Mudar aqui <strong>não altera</strong> relatórios já emitidos, que guardam uma cópia da época.
+</p>
+
+@if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (falhaAoCarregar()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+    <button type="button" class="botao-secundario mt-2" (click)="carregar()">Tentar de novo</button>
+  </div>
+} @else {
+  @if (!configurado()) {
+    <p class="aviso mt-3" role="status">A empresa ainda não foi configurada. Sem estes dados, não é possível emitir relatórios.</p>
+  }
+
+  <form class="cartao mt-4 grid gap-4 sm:grid-cols-2" novalidate (submit)="$event.preventDefault(); salvar()">
+    <div class="sm:col-span-2">
+      <label for="razao" class="rotulo">Razão social *</label>
+      <input id="razao" class="campo" autocomplete="off" [formField]="formulario.razaoSocial" [attr.aria-invalid]="formulario.razaoSocial().touched() && formulario.razaoSocial().invalid()" aria-describedby="razao-erro" />
+      <p id="razao-erro" class="campo-erro">
+        @if (formulario.razaoSocial().touched()) {
+          @for (e of formulario.razaoSocial().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+    </div>
+
+    <div class="sm:col-span-2">
+      <label for="fantasia" class="rotulo">Nome fantasia</label>
+      <input id="fantasia" class="campo" autocomplete="off" [formField]="formulario.nomeFantasia" />
+    </div>
+
+    <div>
+      <label for="cnpj" class="rotulo">CNPJ *</label>
+      <input id="cnpj" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.cnpj" [attr.aria-invalid]="formulario.cnpj().touched() && formulario.cnpj().invalid()" aria-describedby="cnpj-erro" />
+      <p id="cnpj-erro" class="campo-erro">
+        @if (formulario.cnpj().touched()) {
+          @for (e of formulario.cnpj().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+    </div>
+
+    <div>
+      <label for="ie" class="rotulo">Inscrição estadual</label>
+      <input id="ie" class="campo" autocomplete="off" [formField]="formulario.inscricaoEstadual" />
+    </div>
+
+    <div>
+      <label for="logradouro" class="rotulo">Logradouro</label>
+      <input id="logradouro" class="campo" autocomplete="off" [formField]="formulario.logradouro" />
+    </div>
+
+    <div>
+      <label for="numero" class="rotulo">Número</label>
+      <input id="numero" class="campo" autocomplete="off" [formField]="formulario.numero" />
+    </div>
+
+    <div>
+      <label for="bairro" class="rotulo">Bairro</label>
+      <input id="bairro" class="campo" autocomplete="off" [formField]="formulario.bairro" />
+    </div>
+
+    <div>
+      <label for="cep" class="rotulo">CEP</label>
+      <input id="cep" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.cep" />
+    </div>
+
+    <div>
+      <label for="cidade" class="rotulo">Cidade</label>
+      <input id="cidade" class="campo" autocomplete="off" [formField]="formulario.cidade" />
+    </div>
+
+    <div>
+      <label for="uf" class="rotulo">UF</label>
+      <select id="uf" class="campo" [formField]="formulario.uf">
+        <option value="">—</option>
+        @for (sigla of ufs; track sigla) {
+          <option [value]="sigla">{{ sigla }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="sm:col-span-2">
+      <label for="telefones" class="rotulo">Telefones</label>
+      <input id="telefones" class="campo" autocomplete="off" [formField]="formulario.telefones" />
+    </div>
+
+    <div class="sm:col-span-2">
+      <label for="ipem" class="rotulo">Nº de autorização do IPEM/RO</label>
+      <input id="ipem" class="campo" autocomplete="off" [formField]="formulario.numeroAutorizacaoIpem" />
+    </div>
+
+    <fieldset class="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+      <legend class="rotulo">Responsável técnico (sai no rodapé de todo relatório)</legend>
+      <div>
+        <label for="rt-nome" class="rotulo">Nome</label>
+        <input id="rt-nome" class="campo" autocomplete="off" [formField]="formulario.responsavelTecnicoNome" />
+      </div>
+      <div>
+        <label for="rt-cpf" class="rotulo">CPF</label>
+        <input id="rt-cpf" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.responsavelTecnicoCpf" />
+      </div>
+    </fieldset>
+
+    <div class="sm:col-span-2" role="alert">
+      @if (conflito()) {
+        <div class="alerta-erro">
+          <p>Estes dados foram alterados por outra pessoa. Recarregue os dados atuais e refaça sua alteração.</p>
+          <button type="button" class="botao-secundario mt-2" (click)="carregar()">Recarregar</button>
+        </div>
+      }
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    @if (salvo()) {
+      <p class="rounded-lg border border-green-700 bg-green-50 p-3 text-sm text-green-900 sm:col-span-2 dark:border-green-400 dark:bg-green-950 dark:text-green-100" role="status">Dados da empresa salvos.</p>
+    }
+
+    <div class="sm:col-span-2">
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Salvando…' : 'Salvar' }}</button>
+    </div>
+  </form>
+}

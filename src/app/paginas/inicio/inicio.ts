@@ -14,6 +14,11 @@ import { Sessao } from '../../core/sessao';
     <ul class="mt-4 grid gap-3 sm:grid-cols-2">
       <li><a routerLink="/clientes" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Clientes</a></li>
       <li><a routerLink="/equipamentos" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Equipamentos</a></li>
+      @if (sessao.ehGestor()) {
+        <li><a routerLink="/catalogo" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Catálogo de serviços</a></li>
+        <li><a routerLink="/emissor" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Dados da empresa</a></li>
+        <li><a routerLink="/usuarios" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Usuários</a></li>
+      }
     </ul>
     <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">As telas de relatórios chegam nas próximas etapas.</p>
   `,

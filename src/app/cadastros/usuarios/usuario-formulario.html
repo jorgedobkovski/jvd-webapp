@@ -1,0 +1,156 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{{ titulo() }}</h1>
+  <a routerLink="/usuarios" class="botao-secundario">Voltar</a>
+</div>
+
+@if (senhaEntregue(); as entregue) {
+  <section class="aviso mt-4" role="alertdialog" aria-labelledby="titulo-senha">
+    <h2 id="titulo-senha" class="text-lg font-semibold">Senha provisória de {{ entregue.paraNome }}</h2>
+    <p class="mt-1">Entregue esta senha à pessoa. Ela <strong>não aparece de novo</strong>; no primeiro acesso será obrigatório criar uma senha própria.</p>
+    <p class="mt-3">
+      <output class="inline-block select-all rounded-lg border border-amber-700 bg-white px-3 py-2 font-mono text-lg tracking-wider text-slate-900 dark:border-amber-300 dark:bg-slate-950 dark:text-slate-50" aria-label="Senha provisória">{{ entregue.senha }}</output>
+    </p>
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <button type="button" class="botao-secundario" (click)="copiar()">Copiar senha</button>
+      <button type="button" class="botao-primario" (click)="concluir()">Concluir</button>
+    </div>
+    <p class="mt-2 text-sm" role="status">
+      @if (copiado()) {
+        Senha copiada.
+      }
+      @if (falhaAoCopiar()) {
+        Não foi possível copiar; selecione o texto acima e copie manualmente.
+      }
+    </p>
+  </section>
+} @else if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (semCadastro()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+  </div>
+} @else {
+  @if (usuario(); as atual) {
+    <p class="mt-2 flex flex-wrap items-center gap-2">
+      @if (!atual.ativo) {
+        <span class="etiqueta">Inativo</span>
+      }
+      @if (atual.deveTrocarSenha) {
+        <span class="etiqueta">Senha provisória pendente</span>
+      }
+      @if (souEu()) {
+        <span class="etiqueta">Você</span>
+      }
+    </p>
+
+    @if (!souEu()) {
+      <div class="mt-2 flex flex-wrap gap-2">
+        <button type="button" class="botao-secundario" (click)="confirmando.set('situacao')">{{ atual.ativo ? 'Desativar' : 'Reativar' }}</button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set('senha')">Redefinir senha</button>
+      </div>
+    } @else {
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-200">Para trocar a sua própria senha, use "Trocar senha" no topo da página.</p>
+    }
+
+    @if (confirmando() === 'situacao') {
+      <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar alteração de situação">
+        <p>{{ atual.ativo ? 'Desativar este usuário? Ele perde o acesso e as sessões abertas são encerradas.' : 'Reativar este usuário?' }}</p>
+        <div class="mt-2 flex gap-2">
+          <button type="button" [class]="atual.ativo ? 'botao-perigo' : 'botao-primario'" [disabled]="enviando()" (click)="alternarSituacao(!atual.ativo)">
+            {{ atual.ativo ? 'Sim, desativar' : 'Sim, reativar' }}
+          </button>
+          <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
+        </div>
+      </div>
+    }
+    @if (confirmando() === 'senha') {
+      <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar redefinição de senha">
+        <p>Gerar uma nova senha provisória para este usuário? A senha atual deixa de valer e as sessões abertas são encerradas.</p>
+        <div class="mt-2 flex gap-2">
+          <button type="button" class="botao-perigo" [disabled]="enviando()" (click)="redefinirSenha()">Sim, gerar nova senha</button>
+          <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
+        </div>
+      </div>
+    }
+  }
+
+  <form class="cartao mt-4 grid gap-4 sm:grid-cols-2" novalidate (submit)="$event.preventDefault(); salvar()">
+    <div class="sm:col-span-2">
+      <label for="nome" class="rotulo">Nome *</label>
+      <input id="nome" class="campo" autocomplete="off" [formField]="formulario.nome" [attr.aria-invalid]="formulario.nome().touched() && formulario.nome().invalid()" aria-describedby="nome-erro" />
+      <p id="nome-erro" class="campo-erro">
+        @if (formulario.nome().touched()) {
+          @for (e of formulario.nome().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+    </div>
+
+    @if (edicao) {
+      <div class="sm:col-span-2">
+        <p class="rotulo">E-mail</p>
+        <p class="mt-1">{{ modelo().email }}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300">O e-mail é o login e não pode ser alterado.</p>
+      </div>
+    } @else {
+      <div class="sm:col-span-2">
+        <label for="email" class="rotulo">E-mail (será o login) *</label>
+        <input id="email" type="email" class="campo" autocomplete="off" inputmode="email" [formField]="formulario.email" [attr.aria-invalid]="formulario.email().touched() && formulario.email().invalid()" aria-describedby="email-erro" />
+        <p id="email-erro" class="campo-erro">
+          @if (formulario.email().touched()) {
+            @for (e of formulario.email().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+    }
+
+    <div>
+      <label for="perfil" class="rotulo">Perfil *</label>
+      <select id="perfil" class="campo" [formField]="formulario.perfil">
+        <option value="Tecnico">Técnico</option>
+        <option value="Gestor">Gestor</option>
+      </select>
+      @if (mudouPerfil()) {
+        <p class="aviso mt-2" role="status">Mudar o perfil encerra as sessões abertas desta pessoa.</p>
+      }
+    </div>
+
+    <div>
+      <label for="cpf" class="rotulo">CPF</label>
+      <input id="cpf" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.cpf" />
+    </div>
+
+    @if (!edicao) {
+      <p class="text-sm text-slate-700 sm:col-span-2 dark:text-slate-200">
+        Ao salvar, o sistema gera uma senha provisória e mostra uma única vez para você entregá-la. A pessoa troca no primeiro acesso.
+      </p>
+    }
+
+    <div class="sm:col-span-2" role="alert">
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    @if (salvo()) {
+      <p class="rounded-lg border border-green-700 bg-green-50 p-3 text-sm text-green-900 sm:col-span-2 dark:border-green-400 dark:bg-green-950 dark:text-green-100" role="status">Usuário salvo.</p>
+    }
+
+    <div class="sm:col-span-2">
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Salvando…' : 'Salvar' }}</button>
+    </div>
+  </form>
+}

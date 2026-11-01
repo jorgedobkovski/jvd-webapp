@@ -20,13 +20,24 @@ import { Sessao } from '../core/sessao';
           </div>
         </div>
         <nav class="border-t border-slate-200 dark:border-slate-800" aria-label="Principal">
-          <ul class="mx-auto flex max-w-5xl gap-1 px-4 py-1 text-sm font-medium">
+          <ul class="mx-auto flex max-w-5xl flex-wrap gap-1 px-4 py-1 text-sm font-medium">
             <li>
               <a routerLink="/clientes" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Clientes</a>
             </li>
             <li>
               <a routerLink="/equipamentos" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Equipamentos</a>
             </li>
+            @if (sessao.ehGestor()) {
+            <li>
+              <a routerLink="/catalogo" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Catálogo</a>
+            </li>
+            <li>
+              <a routerLink="/emissor" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Empresa</a>
+            </li>
+            <li>
+              <a routerLink="/usuarios" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Usuários</a>
+            </li>
+            }
           </ul>
         </nav>
       </header>
