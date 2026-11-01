@@ -1,0 +1,205 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">Retificar relatório{{ relatorio() ? ' nº ' + relatorio()!.numeroFormatado : '' }}</h1>
+  <a [routerLink]="['/relatorios', id]" class="botao-secundario">Cancelar</a>
+</div>
+
+@if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (indisponivel()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+    <button type="button" class="botao-secundario mt-2" (click)="carregar()">Tentar de novo</button>
+  </div>
+  <p class="mt-3"><a [routerLink]="['/relatorios', id]" class="underline">Ver o relatório</a></p>
+} @else if (relatorio(); as r) {
+  <p class="aviso mt-3" role="note">
+    A retificação <strong>mantém o número</strong> e grava no histórico o que mudou, quem alterou e o motivo. Cliente, equipamento e executor não mudam por aqui; para isso, cancele este relatório e emita outro.
+  </p>
+
+  <dl class="cartao mt-3 grid gap-2 sm:grid-cols-2">
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Cliente</dt>
+      <dd class="font-semibold">{{ r.cliente?.nome ?? r.clienteNome }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Equipamento</dt>
+      <dd class="font-semibold">{{ r.equipamento?.descricao ?? r.equipamentoDescricao }}</dd>
+    </div>
+  </dl>
+
+  <form class="mt-4 grid gap-4" novalidate (submit)="$event.preventDefault(); salvar()">
+    <section class="cartao grid gap-4" aria-labelledby="sec-motivo">
+      <h2 id="sec-motivo" class="text-lg font-semibold">Motivo *</h2>
+      <div>
+        <label for="motivo" class="rotulo">Por que este relatório está sendo retificado?</label>
+        <textarea id="motivo" rows="3" class="campo" [formField]="formulario.motivo" [attr.aria-invalid]="formulario.motivo().touched() && formulario.motivo().invalid()" aria-describedby="motivo-erro"></textarea>
+        <p id="motivo-erro" class="campo-erro">
+          @if (formulario.motivo().touched()) {
+            @for (e of formulario.motivo().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+      <label class="flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
+        <input type="checkbox" class="mt-0.5 size-5" [formField]="formulario.atualizarCadastro" />
+        <span>Atualizar também os dados do cliente e do equipamento com o cadastro de hoje (use só para corrigir dado cadastral; o cliente precisa ter CPF/CNPJ).</span>
+      </label>
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-servico">
+      <h2 id="sec-servico" class="text-lg font-semibold sm:col-span-2">Serviço</h2>
+
+      <div>
+        <label for="tipo" class="rotulo">Tipo de serviço *</label>
+        <select id="tipo" class="campo" [formField]="formulario.tipoServico" [attr.aria-invalid]="formulario.tipoServico().touched() && formulario.tipoServico().invalid()" aria-describedby="tipo-erro">
+          <option value="">Escolha o tipo</option>
+          @for (t of tipos; track t.valor) {
+            <option [value]="t.valor">{{ t.rotulo }}</option>
+          }
+        </select>
+        <p id="tipo-erro" class="campo-erro">
+          @if (formulario.tipoServico().touched()) {
+            @for (e of formulario.tipoServico().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="data" class="rotulo">Data do serviço *</label>
+        <input id="data" type="date" class="campo" [formField]="formulario.dataServico" [attr.aria-invalid]="formulario.dataServico().touched() && formulario.dataServico().invalid()" aria-describedby="data-erro" />
+        <p id="data-erro" class="campo-erro">
+          @if (formulario.dataServico().touched()) {
+            @for (e of formulario.dataServico().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      @if (opcoesDoCatalogo().length > 0) {
+        <div class="sm:col-span-2">
+          <label for="catalogo" class="rotulo">Serviço do catálogo</label>
+          <select id="catalogo" class="campo" [formField]="formulario.catalogoServicoId">
+            <option value="">Nenhum</option>
+            @for (o of opcoesDoCatalogo(); track o.id) {
+              <option [value]="o.id">{{ o.rotulo }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="sm:col-span-2">
+        <label for="servico" class="rotulo">Serviço executado *</label>
+        <textarea id="servico" rows="4" class="campo" [formField]="formulario.servicoExecutado" [attr.aria-invalid]="formulario.servicoExecutado().touched() && formulario.servicoExecutado().invalid()" aria-describedby="servico-erro"></textarea>
+        <p id="servico-erro" class="campo-erro">
+          @if (formulario.servicoExecutado().touched()) {
+            @for (e of formulario.servicoExecutado().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label for="observacoes" class="rotulo">Observações</label>
+        <textarea id="observacoes" rows="3" class="campo" [formField]="formulario.observacoes" [attr.aria-invalid]="formulario.observacoes().touched() && formulario.observacoes().invalid()" aria-describedby="observacoes-erro"></textarea>
+        <p id="observacoes-erro" class="campo-erro">
+          @if (formulario.observacoes().touched()) {
+            @for (e of formulario.observacoes().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-verificacao">
+      <h2 id="sec-verificacao" class="text-lg font-semibold sm:col-span-2">Verificação anterior e selo</h2>
+      <div>
+        <label for="verificacao-data" class="rotulo">Data da verificação anterior</label>
+        <input id="verificacao-data" type="date" class="campo" [formField]="formulario.verificacaoData" />
+      </div>
+      <div>
+        <label for="verificacao-certificado" class="rotulo">Certificado nº</label>
+        <input id="verificacao-certificado" class="campo" autocomplete="off" [formField]="formulario.verificacaoCertificado" [attr.aria-invalid]="formulario.verificacaoCertificado().invalid()" aria-describedby="certificado-erro" />
+        <p id="certificado-erro" class="campo-erro">
+          @for (e of formulario.verificacaoCertificado().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+      <div class="sm:col-span-2">
+        <label for="selo" class="rotulo">Nº do selo reparador (opcional)</label>
+        <input id="selo" class="campo" autocomplete="off" [formField]="formulario.selo" [attr.aria-invalid]="formulario.selo().invalid()" aria-describedby="selo-erro" />
+        <p id="selo-erro" class="campo-erro">
+          @for (e of formulario.selo().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-valores">
+      <h2 id="sec-valores" class="text-lg font-semibold sm:col-span-2">Garantia e valores</h2>
+      <div class="sm:col-span-2">
+        <label for="garantia" class="rotulo">Garantia (dias)</label>
+        <input id="garantia" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.garantiaDias" [attr.aria-invalid]="formulario.garantiaDias().touched() && formulario.garantiaDias().invalid()" aria-describedby="garantia-erro" />
+        <p id="garantia-erro" class="campo-erro">
+          @if (formulario.garantiaDias().touched()) {
+            @for (e of formulario.garantiaDias().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+      <div>
+        <label for="total" class="rotulo">Total (R$)</label>
+        <input id="total" class="campo" inputmode="decimal" autocomplete="off" placeholder="0,00" [formField]="formulario.total" [attr.aria-invalid]="formulario.total().invalid()" aria-describedby="total-erro" />
+        <p id="total-erro" class="campo-erro">
+          @for (e of formulario.total().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+      <div>
+        <label for="desconto" class="rotulo">Desconto (R$)</label>
+        <input id="desconto" class="campo" inputmode="decimal" autocomplete="off" placeholder="0,00" [formField]="formulario.desconto" [attr.aria-invalid]="formulario.desconto().invalid()" aria-describedby="desconto-erro" />
+        <p id="desconto-erro" class="campo-erro">
+          @for (e of formulario.desconto().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+      <p class="text-lg font-semibold sm:col-span-2" aria-live="polite">Total geral: {{ totalGeral() === null ? '—' : reais(totalGeral()) }}</p>
+    </section>
+
+    <div role="alert">
+      @if (conflito()) {
+        <div class="alerta-erro">
+          <p>Outra pessoa alterou este relatório enquanto você editava. Recarregue os dados atuais e refaça sua retificação.</p>
+          <button type="button" class="botao-secundario mt-2" (click)="carregar()">Recarregar</button>
+        </div>
+      }
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <div>
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Retificando…' : 'Retificar relatório' }}</button>
+    </div>
+  </form>
+}

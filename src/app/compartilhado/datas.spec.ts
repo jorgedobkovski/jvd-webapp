@@ -1,4 +1,4 @@
-import { formatarData, hoje } from './datas';
+import { formatarData, formatarDataHora, hoje } from './datas';
 
 describe('datas', () => {
   it('formata aaaa-mm-dd como dd/mm/aaaa sem deslocar o dia', () => {
@@ -11,6 +11,13 @@ describe('datas', () => {
     expect(formatarData(undefined)).toBe('');
     expect(formatarData('')).toBe('');
     expect(formatarData('ontem')).toBe('ontem');
+  });
+
+  it('data e hora de um instante ISO sai no formato brasileiro; vazio e inválido voltam como vieram', () => {
+    expect(formatarDataHora('2026-10-31T15:30:00Z')).toMatch(/^\d{2}\/\d{2}\/\d{2,4},? \d{2}:\d{2}$/);
+    expect(formatarDataHora(null)).toBe('');
+    expect(formatarDataHora('')).toBe('');
+    expect(formatarDataHora('ontem')).toBe('ontem');
   });
 
   it('hoje devolve aaaa-mm-dd do dia local', () => {

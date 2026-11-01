@@ -38,9 +38,14 @@ describe('RelatorioDetalheTela', () => {
     fixture.detectChanges();
   };
 
-  async function abrir(detalhe = detalheSintetico()) {
+  /** Abre o detalhe; com revisão > 0 a tela também pede o histórico, que é respondido aqui. */
+  async function abrir(detalhe = detalheSintetico(), revisoes: unknown[] = []) {
     const tela = montar();
     http.expectOne(`${API}/relatorios/r-1`).flush(detalhe);
+    if (detalhe.revisao > 0) {
+      await proximoTick();
+      http.expectOne(`${API}/relatorios/r-1/revisoes`).flush(revisoes);
+    }
     await depois(tela.fixture);
     return tela;
   }
@@ -64,7 +69,7 @@ describe('RelatorioDetalheTela', () => {
   });
 
   it('retificado destaca a revisão', async () => {
-    const { el } = await abrir(detalheSintetico({ revisao: 2 }));
+    const { el } = await abrir(detalheSintetico({ revisao: 2 }), []);
     expect(el.textContent).toContain('Retificado — revisão 2');
   });
 
@@ -225,6 +230,151 @@ describe('RelatorioDetalheTela', () => {
     await depois(fixture);
     expect(document.activeElement?.textContent).toContain('Sim, descartar');
     el.remove();
+  });
+
+  describe('retificar, cancelar e histórico (7B)', () => {
+    const revisao = (sobrescrever: Record<string, unknown> = {}) => ({
+      revisao: 1,
+      retificadoEm: '2026-10-31T15:30:00Z',
+      retificadoPor: 'u-1',
+      retificadoPorNome: 'Gestor Sintético',
+      motivo: 'Valor digitado errado',
+      dadosAnteriores: { total: 100, totalGeral: 90, servicoExecutado: 'Texto antigo' },
+      dadosNovos: { total: 150, totalGeral: 140, servicoExecutado: 'Texto novo' },
+      ...sobrescrever,
+    });
+
+    it('emitido oferece Retificar (link) e Cancelar relatório; rascunho e cancelado não', async () => {
+      const emitido = await abrir();
+      expect(emitido.el.querySelector<HTMLAnchorElement>('a[href="/relatorios/r-1/retificar"]')).not.toBeNull();
+      expect(botao(emitido.el, 'Cancelar relatório')).toBeTruthy();
+      TestBed.resetTestingModule();
+
+      const cancelado = await abrir(detalheSintetico({ status: 'Cancelado', canceladoEm: '2026-10-31T10:00:00Z', motivoCancelamento: 'x' }));
+      expect(cancelado.el.querySelector('a[href="/relatorios/r-1/retificar"]')).toBeNull();
+      expect(cancelado.el.textContent).not.toContain('Cancelar relatório');
+      TestBed.resetTestingModule();
+
+      const rascunho = await abrir(detalheSintetico({ status: 'Rascunho', numero: null, numeroFormatado: null }));
+      expect(rascunho.el.querySelector('a[href="/relatorios/r-1/retificar"]')).toBeNull();
+    });
+
+    it('cancelar exige o motivo, não chama a API sem ele e leva o foco para o campo', async () => {
+      const { fixture, el } = await abrir();
+      document.body.appendChild(el);
+
+      botao(el, 'Cancelar relatório').click();
+      fixture.detectChanges();
+      await depois(fixture);
+      expect(document.activeElement?.id).toBe('motivo-cancelamento');
+      expect(el.textContent).toContain('nunca é reutilizado');
+
+      botao(el, 'Sim, cancelar relatório').click();
+      await depois(fixture);
+
+      http.expectNone(`${API}/relatorios/r-1/cancelar`);
+      expect(el.textContent).toContain('Informe o motivo do cancelamento.');
+      el.remove();
+    });
+
+    it('cancelar com motivo envia motivo e versão, e a tela passa a mostrar Cancelado e o motivo', async () => {
+      const { fixture, el } = await abrir(detalheSintetico({ versao: 'v7' }));
+
+      botao(el, 'Cancelar relatório').click();
+      fixture.detectChanges();
+      const campo = el.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')!;
+      campo.value = '  Emitido para o cliente errado  ';
+      campo.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      botao(el, 'Sim, cancelar relatório').click();
+      await proximoTick();
+
+      const pedido = http.expectOne(`${API}/relatorios/r-1/cancelar`);
+      expect(pedido.request.method).toBe('POST');
+      expect(pedido.request.body).toEqual({ motivo: 'Emitido para o cliente errado', versao: 'v7' });
+      pedido.flush(detalheSintetico({ status: 'Cancelado', canceladoEm: '2026-10-31T10:00:00Z', motivoCancelamento: 'Emitido para o cliente errado', versao: 'v8' }));
+      await depois(fixture);
+
+      expect(el.textContent).toContain('Relatório cancelado em 31/10/2026');
+      expect(el.textContent).toContain('Emitido para o cliente errado');
+      expect(el.textContent).not.toContain('Cancelar relatório');
+      expect(el.querySelector('a[href="/relatorios/r-1/retificar"]')).toBeNull();
+    });
+
+    it('recusa do cancelamento (já cancelado por outra pessoa) aparece na tela', async () => {
+      const { fixture, el } = await abrir();
+      botao(el, 'Cancelar relatório').click();
+      fixture.detectChanges();
+      const campo = el.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')!;
+      campo.value = 'Motivo';
+      campo.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      botao(el, 'Sim, cancelar relatório').click();
+      http.expectOne(`${API}/relatorios/r-1/cancelar`).flush({ codigo: 'relatorio.nao_esta_emitido', detail: 'O relatório não está emitido.', erros: [{ codigo: 'relatorio.nao_esta_emitido', mensagem: 'O relatório não está emitido.' }] }, { status: 409, statusText: 'Conflict' });
+      await depois(fixture);
+
+      expect(el.textContent).toContain('O relatório não está emitido.');
+    });
+
+    it('conflito de versão ao cancelar fecha o painel, traz o relatório atual e avisa', async () => {
+      const { fixture, el } = await abrir();
+      botao(el, 'Cancelar relatório').click();
+      fixture.detectChanges();
+      const campo = el.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')!;
+      campo.value = 'Motivo';
+      campo.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      botao(el, 'Sim, cancelar relatório').click();
+      http.expectOne(`${API}/relatorios/r-1/cancelar`).flush({ codigo: 'conflito', detail: 'x' }, { status: 409, statusText: 'Conflict' });
+      await proximoTick();
+      http.expectOne(`${API}/relatorios/r-1`).flush(detalheSintetico({ versao: 'v9', servicoExecutado: 'Texto novo vindo do servidor' }));
+      await depois(fixture);
+
+      expect(el.textContent).toContain('A tela foi atualizada: confira os dados e cancele de novo');
+      expect(el.textContent).toContain('Texto novo vindo do servidor');
+      expect(el.querySelector('#motivo-cancelamento')).toBeNull();
+    });
+
+    it('sem retificações, não mostra histórico nem pede as revisões', async () => {
+      const { el } = await abrir(detalheSintetico({ revisao: 0 }));
+
+      expect(el.textContent).not.toContain('Histórico de retificações');
+    });
+
+    it('retificado mostra o histórico: revisão, quando, quem, motivo e o antes → depois legível', async () => {
+      const { el } = await abrir(detalheSintetico({ revisao: 1 }), [revisao()]);
+
+      expect(el.textContent).toContain('Histórico de retificações');
+      expect(el.textContent).toContain('Revisão 1');
+      expect(el.textContent).toContain('Gestor Sintético');
+      expect(el.textContent).toContain('Motivo: Valor digitado errado');
+      expect(el.textContent?.replace(/\s/g, ' ')).toContain('Total: R$ 100,00 → R$ 150,00');
+      expect(el.textContent).toContain('Serviço executado: Texto antigo → Texto novo');
+    });
+
+    it('várias revisões aparecem em ordem', async () => {
+      const { el } = await abrir(detalheSintetico({ revisao: 2 }), [revisao(), revisao({ revisao: 2, motivo: 'Segunda correção', dadosAnteriores: { garantiaDias: 30 }, dadosNovos: { garantiaDias: 60 } })]);
+
+      const itens = Array.from(el.querySelectorAll('#sec-historico ~ ol > li')).map((li) => li.textContent ?? '');
+      expect(itens).toHaveLength(2);
+      expect(itens[0]).toContain('Revisão 1');
+      expect(itens[1]).toContain('Revisão 2');
+      expect(itens[1]).toContain('Garantia (dias): 30 → 60');
+    });
+
+    it('falha ao carregar o histórico mostra o erro, sem esconder o relatório', async () => {
+      const tela = montar();
+      http.expectOne(`${API}/relatorios/r-1`).flush(detalheSintetico({ revisao: 1 }));
+      await proximoTick();
+      http.expectOne(`${API}/relatorios/r-1/revisoes`).flush({}, { status: 500, statusText: 'Server Error' });
+      await depois(tela.fixture);
+
+      expect(tela.el.textContent).toContain('Histórico de retificações');
+      expect(tela.el.textContent).toContain('O servidor encontrou um problema');
+      expect(tela.el.querySelector('h1')!.textContent).toContain('Relatório nº 000042');
+    });
   });
 
   it('relatório inexistente (ou de outro técnico) mostra "não encontrado"', async () => {
