@@ -31,9 +31,9 @@ describe('Estrutura (menu)', () => {
     expect(menu).toEqual(['Relatórios', 'Clientes', 'Equipamentos']);
   });
 
-  it('gestor também vê Catálogo, Empresa e Usuários', () => {
+  it('gestor também vê Catálogo, Empresa, Usuários e Importação', () => {
     const { menu } = montar(true);
-    expect(menu).toEqual(['Relatórios', 'Clientes', 'Equipamentos', 'Catálogo', 'Empresa', 'Usuários']);
+    expect(menu).toEqual(['Relatórios', 'Clientes', 'Equipamentos', 'Catálogo', 'Empresa', 'Usuários', 'Importação']);
   });
 
   it('mostra o nome e o perfil de quem está logado', () => {

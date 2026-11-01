@@ -52,6 +52,12 @@ export class UsuariosApi {
   private readonly http = inject(HttpClient);
   readonly url = `${inject(API_URL)}/usuarios`;
 
+  /** Todos os usuários (até 100, ativos e inativos), para o gestor filtrar relatórios por executor. */
+  async listarTodos(): Promise<UsuarioDoSistema[]> {
+    const pagina = await firstValueFrom(this.http.get<Pagina<UsuarioDoSistema>>(this.url, { params: paramsDeUsuarios({ tamanho: 100 }) }));
+    return pagina.itens;
+  }
+
   /** Usuários ativos (até 100), para o gestor escolher o executor de um relatório. */
   async listarAtivos(): Promise<UsuarioDoSistema[]> {
     const pagina = await firstValueFrom(this.http.get<Pagina<UsuarioDoSistema>>(this.url, { params: paramsDeUsuarios({ ativo: true, tamanho: 100 }) }));

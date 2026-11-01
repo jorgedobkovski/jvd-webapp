@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { sessaoFalsa } from '../cadastros/teste-cadastros';
+import { clienteSintetico, sessaoFalsa } from '../cadastros/teste-cadastros';
 import { API_URL } from '../core/api-url';
 import { Sessao } from '../core/sessao';
 import { API, proximoTick } from '../core/teste-apoio';
@@ -11,8 +11,12 @@ import { resumoSintetico } from './teste-relatorios';
 
 describe('RelatoriosLista', () => {
   let http: HttpTestingController;
+  let ehGestor = false;
+
+  const usuario = (id: string, nome: string, ativo = true) => ({ id, nome, email: `${id}@exemplo.com`, perfil: 'Tecnico', cpf: null, ativo, deveTrocarSenha: false, criadoEm: '', atualizadoEm: '' });
 
   function montar(gestor: boolean) {
+    ehGestor = gestor;
     TestBed.configureTestingModule({
       imports: [RelatoriosLista],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: API_URL, useValue: API }, { provide: Sessao, useValue: sessaoFalsa(gestor) }],
@@ -25,6 +29,7 @@ describe('RelatoriosLista', () => {
 
   async function responder(fixture: ReturnType<typeof montar>['fixture'], itens = [resumoSintetico()], total = itens.length) {
     await proximoTick();
+    if (ehGestor) http.expectOne((r) => r.url === `${API}/usuarios`).flush({ itens: [usuario('u-1', 'Técnico Sintético'), usuario('u-2', 'Ex-técnico', false)], pagina: 1, tamanho: 100, total: 2 });
     http.expectOne((r) => r.url === `${API}/relatorios`).flush({ itens, pagina: 1, tamanho: 20, total });
     await proximoTick();
     await fixture.whenStable();
@@ -60,6 +65,64 @@ describe('RelatoriosLista', () => {
 
     expect(el.querySelector('h1')!.textContent).toBe('Relatórios');
     expect(el.textContent).toContain('Técnico Sintético');
+  });
+
+  it('técnico NÃO vê os filtros de executor e de cliente, e a tela nem consulta os usuários', async () => {
+    const { fixture, el } = montar(false);
+    await responder(fixture);
+
+    expect(el.querySelector('#executor')).toBeNull();
+    expect(el.textContent).not.toContain('Cliente (opcional)');
+    http.expectNone((r) => r.url === `${API}/usuarios`);
+  });
+
+  it('gestor filtra por executor (inclusive de quem já saiu) e o filtro vai para a API', async () => {
+    const { fixture, el } = montar(true);
+    await responder(fixture);
+    const opcoes = el.querySelector<HTMLSelectElement>('#executor')!.textContent!;
+    expect(opcoes).toContain('Técnico Sintético');
+    expect(opcoes).toContain('Ex-técnico (inativo)');
+
+    preencher(el, '#executor', 'u-2');
+    fixture.detectChanges();
+    el.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    await proximoTick();
+
+    const pedido = http.expectOne((r) => r.url === `${API}/relatorios`);
+    expect(pedido.request.params.get('tecnicoId')).toBe('u-2');
+    pedido.flush({ itens: [], pagina: 1, tamanho: 20, total: 0 });
+    await proximoTick();
+  });
+
+  it('gestor filtra por cliente e pode limpar o filtro', async () => {
+    const { fixture, el } = montar(true);
+    await responder(fixture);
+
+    preencher(el, 'input[aria-label="Buscar cliente"]', 'mercado');
+    Array.from(el.querySelectorAll<HTMLButtonElement>('fieldset button')).find((b) => b.textContent?.trim() === 'Buscar')!.click();
+    await proximoTick();
+    http.expectOne((r) => r.url === `${API}/clientes`).flush({ itens: [clienteSintetico()], pagina: 1, tamanho: 8, total: 1 });
+    await proximoTick();
+    fixture.detectChanges();
+    Array.from(el.querySelectorAll<HTMLButtonElement>('fieldset ul button')).find((b) => b.textContent?.includes('Mercado Teste Ltda'))!.click();
+    fixture.detectChanges();
+
+    el.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    await proximoTick();
+    const comCliente = http.expectOne((r) => r.url === `${API}/relatorios`);
+    expect(comCliente.request.params.get('clienteId')).toBe('cli-1');
+    comCliente.flush({ itens: [], pagina: 1, tamanho: 20, total: 0 });
+    await proximoTick();
+    fixture.detectChanges();
+
+    Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.includes('Limpar o filtro de cliente'))!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    await proximoTick();
+    const semCliente = http.expectOne((r) => r.url === `${API}/relatorios`);
+    expect(semCliente.request.params.has('clienteId')).toBe(false);
+    semCliente.flush({ itens: [], pagina: 1, tamanho: 20, total: 0 });
+    await proximoTick();
   });
 
   it('rascunho aparece sem número e retificado destaca a revisão', async () => {
