@@ -11,6 +11,10 @@ export const routes: Routes = [
     canActivate: [exigeSessao],
     children: [
       { path: '', pathMatch: 'full', loadComponent: () => import('./paginas/inicio/inicio').then((m) => m.Inicio) },
+      { path: 'relatorios', loadComponent: () => import('./relatorios/relatorios-lista').then((m) => m.RelatoriosLista) },
+      { path: 'relatorios/novo', loadComponent: () => import('./relatorios/relatorio-formulario').then((m) => m.RelatorioFormulario) },
+      { path: 'relatorios/:id', loadComponent: () => import('./relatorios/relatorio-detalhe').then((m) => m.RelatorioDetalheTela) },
+      { path: 'relatorios/:id/editar', loadComponent: () => import('./relatorios/relatorio-formulario').then((m) => m.RelatorioFormulario) },
       { path: 'clientes', loadComponent: () => import('./cadastros/clientes/clientes-lista').then((m) => m.ClientesLista) },
       { path: 'clientes/novo', loadComponent: () => import('./cadastros/clientes/cliente-formulario').then((m) => m.ClienteFormulario) },
       { path: 'clientes/:id', loadComponent: () => import('./cadastros/clientes/cliente-detalhe').then((m) => m.ClienteDetalhe) },

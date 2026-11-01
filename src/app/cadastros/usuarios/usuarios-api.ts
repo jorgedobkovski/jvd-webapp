@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { Pagina } from '../../compartilhado/modelos';
 import { API_URL } from '../../core/api-url';
 import { Perfil } from '../../core/modelos';
 
@@ -50,6 +51,12 @@ export function paramsDeUsuarios(f: FiltroDeUsuarios): Record<string, string | n
 export class UsuariosApi {
   private readonly http = inject(HttpClient);
   readonly url = `${inject(API_URL)}/usuarios`;
+
+  /** Usuários ativos (até 100), para o gestor escolher o executor de um relatório. */
+  async listarAtivos(): Promise<UsuarioDoSistema[]> {
+    const pagina = await firstValueFrom(this.http.get<Pagina<UsuarioDoSistema>>(this.url, { params: paramsDeUsuarios({ ativo: true, tamanho: 100 }) }));
+    return pagina.itens;
+  }
 
   obter(id: string): Promise<UsuarioDoSistema> {
     return firstValueFrom(this.http.get<UsuarioDoSistema>(`${this.url}/${encodeURIComponent(id)}`));

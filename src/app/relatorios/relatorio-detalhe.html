@@ -1,0 +1,155 @@
+<p class="mb-3"><a routerLink="/relatorios" class="underline">← Relatórios</a></p>
+
+@if (carregando()) {
+  <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (naoEncontrado()) {
+  <div class="alerta-erro" role="alert"><p>Relatório não encontrado.</p></div>
+} @else if (!relatorio()) {
+  <div class="alerta-erro" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+    <button type="button" class="botao-secundario mt-2" (click)="carregar()">Tentar de novo</button>
+  </div>
+} @else if (relatorio(); as r) {
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">{{ r.numeroFormatado ? 'Relatório nº ' + r.numeroFormatado : 'Rascunho de relatório' }}</h1>
+      <p class="mt-1 flex flex-wrap gap-1">
+        <span class="etiqueta">{{ estado(r) }}</span>
+        <span class="etiqueta">{{ tipo(r.tipoServico) }}</span>
+      </p>
+    </div>
+    @if (ehRascunho()) {
+      <div class="flex flex-wrap gap-2">
+        <a [routerLink]="['/relatorios', r.id, 'editar']" class="botao-secundario">Editar</a>
+        <button type="button" class="botao-primario" (click)="confirmando.set('emitir')">Emitir</button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set('descartar')">Descartar</button>
+      </div>
+    }
+  </div>
+
+  @if (r.status === 'Cancelado') {
+    <div class="alerta-erro mt-3" role="status">
+      <p class="font-semibold">Relatório cancelado em {{ data(r.canceladoEm) }}.</p>
+      @if (r.motivoCancelamento) {
+        <p>Motivo: {{ r.motivoCancelamento }}</p>
+      }
+    </div>
+  }
+
+  @if (confirmando() === 'emitir') {
+    <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar emissão">
+      <p>Emitir este relatório? Ele recebe o número definitivo e <strong>deixa de poder ser editado diretamente</strong>; mudanças depois só por retificação.</p>
+      <div class="mt-2 flex gap-2">
+        <button #confirmar type="button" class="botao-primario" [disabled]="trabalhando()" (click)="emitir()">{{ trabalhando() ? 'Emitindo…' : 'Sim, emitir' }}</button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
+      </div>
+    </div>
+  }
+  @if (confirmando() === 'descartar') {
+    <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar descarte">
+      <p>Descartar este rascunho? Ele é <strong>apagado de verdade</strong>, sem como recuperar.</p>
+      <div class="mt-2 flex gap-2">
+        <button #confirmar type="button" class="botao-perigo" [disabled]="trabalhando()" (click)="descartar()">Sim, descartar</button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
+      </div>
+    </div>
+  }
+
+  <div role="alert">
+    @if (erros().length > 0) {
+      <div class="alerta-erro mt-3">
+        <ul class="list-inside list-disc">
+          @for (mensagem of erros(); track $index) {
+            <li>{{ mensagem }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  @if (temPdf()) {
+    <section class="cartao mt-4" aria-labelledby="sec-pdf">
+      <h2 id="sec-pdf" class="text-lg font-semibold">PDF para imprimir</h2>
+      <form class="mt-2 flex flex-wrap items-end gap-3" (submit)="$event.preventDefault(); baixarPdf()">
+        <div>
+          <label for="via" class="rotulo">Via</label>
+          <select id="via" class="campo" [formField]="formularioDaVia.via">
+            @for (v of vias; track v.valor) {
+              <option [value]="v.valor">{{ v.rotulo }}</option>
+            }
+          </select>
+        </div>
+        <button type="submit" class="botao-primario" [disabled]="baixando()">{{ baixando() ? 'Gerando…' : 'Baixar PDF' }}</button>
+      </form>
+    </section>
+  }
+
+  <dl class="cartao mt-4 grid gap-3 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Cliente</dt>
+      <dd class="font-semibold">{{ r.cliente?.nome ?? r.clienteNome }}</dd>
+      @if (r.cliente; as c) {
+        <dd class="text-sm">
+          {{ c.documento ? documento(c.documento) : 'Sem CPF/CNPJ' }}@if (endereco(c)) {
+            · {{ endereco(c) }}
+          }
+        </dd>
+      }
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Equipamento</dt>
+      <dd class="font-semibold">{{ r.equipamento?.descricao ?? r.equipamentoDescricao }}</dd>
+      @if (r.equipamento; as e) {
+        <dd class="text-sm">
+          @if (e.numeroSerie) {
+            Série {{ e.numeroSerie }}
+          }
+          @if (e.numeroInmetro) {
+            · INMETRO {{ e.numeroInmetro }}
+          }
+        </dd>
+      }
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Data do serviço</dt>
+      <dd>{{ data(r.dataServico) }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Executor</dt>
+      <dd>{{ r.tecnicoNome }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Verificação anterior</dt>
+      <dd>
+        {{ r.verificacaoAnteriorData ? data(r.verificacaoAnteriorData) : '' }}{{ r.verificacaoAnteriorCertificado ? ' · certificado ' + r.verificacaoAnteriorCertificado : '' }}{{ !r.verificacaoAnteriorData && !r.verificacaoAnteriorCertificado ? 'Não informada' : '' }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Selo reparador</dt>
+      <dd>{{ r.numeroSeloReparador ?? 'Não informado' }}</dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Serviço executado</dt>
+      <dd class="whitespace-pre-line">{{ r.servicoExecutado || 'Ainda não preenchido' }}</dd>
+    </div>
+    @if (r.observacoes) {
+      <div class="sm:col-span-2">
+        <dt class="text-sm text-slate-600 dark:text-slate-300">Observações</dt>
+        <dd class="whitespace-pre-line">{{ r.observacoes }}</dd>
+      </div>
+    }
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Garantia</dt>
+      <dd>{{ r.garantiaExtenso }}</dd>
+    </div>
+    <div>
+      <dt class="text-sm text-slate-600 dark:text-slate-300">Valores</dt>
+      <dd>Total {{ reais(r.total) }} · Desconto {{ reais(r.desconto) }}</dd>
+      <dd class="text-lg font-semibold">Total geral {{ reais(r.totalGeral) }}</dd>
+    </div>
+  </dl>
+}

@@ -22,6 +22,9 @@ import { Sessao } from '../core/sessao';
         <nav class="border-t border-slate-200 dark:border-slate-800" aria-label="Principal">
           <ul class="mx-auto flex max-w-5xl flex-wrap gap-1 px-4 py-1 text-sm font-medium">
             <li>
+              <a routerLink="/relatorios" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Relatórios</a>
+            </li>
+            <li>
               <a routerLink="/clientes" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Clientes</a>
             </li>
             <li>

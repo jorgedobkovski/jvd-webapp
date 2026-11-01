@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_URL } from '../../core/api-url';
-import { Aviso } from '../../compartilhado/modelos';
+import { Aviso, Pagina } from '../../compartilhado/modelos';
 
 export interface Equipamento {
   id: string;
@@ -53,6 +53,12 @@ export function paramsDeEquipamentos(f: FiltroDeEquipamentos): Record<string, st
 export class EquipamentosApi {
   private readonly http = inject(HttpClient);
   readonly url = `${inject(API_URL)}/equipamentos`;
+
+  /** Balanças de um cliente (até 100); o técnico só recebe as ativas. */
+  async listarDoCliente(clienteId: string): Promise<Equipamento[]> {
+    const pagina = await firstValueFrom(this.http.get<Pagina<Equipamento>>(this.url, { params: paramsDeEquipamentos({ clienteId, ativo: true, tamanho: 100 }) }));
+    return pagina.itens;
+  }
 
   obter(id: string): Promise<Equipamento> {
     return firstValueFrom(this.http.get<Equipamento>(`${this.url}/${encodeURIComponent(id)}`));

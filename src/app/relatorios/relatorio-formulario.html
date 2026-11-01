@@ -1,0 +1,237 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{{ titulo() }}</h1>
+  <a [routerLink]="id ? ['/relatorios', id] : ['/relatorios']" class="botao-secundario">Cancelar</a>
+</div>
+
+@if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (indisponivel()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+  </div>
+  @if (id) {
+    <p class="mt-3"><a [routerLink]="['/relatorios', id]" class="underline">Ver o relatório</a></p>
+  }
+} @else {
+  <form class="mt-4 grid gap-4" novalidate (submit)="$event.preventDefault(); salvar()">
+    <section class="cartao grid gap-4" aria-labelledby="sec-cliente">
+      <h2 id="sec-cliente" class="text-lg font-semibold">Cliente e equipamento</h2>
+
+      <jvd-seletor-de-cliente [(cliente)]="cliente" (escolhido)="aoEscolherCliente($event)" />
+      @if (semCliente()) {
+        <p class="campo-erro" role="alert">Escolha o cliente.</p>
+      }
+
+      <div>
+        <label for="equipamento" class="rotulo">Equipamento *</label>
+        <select id="equipamento" class="campo" [formField]="formulario.equipamentoId" [attr.aria-invalid]="formulario.equipamentoId().touched() && formulario.equipamentoId().invalid()" aria-describedby="equipamento-erro">
+          <option value="">{{ !cliente() ? 'Escolha o cliente primeiro' : carregandoEquipamentos() ? 'Carregando…' : equipamentos().length === 0 ? 'Este cliente não tem equipamento ativo' : 'Escolha o equipamento' }}</option>
+          @for (e of equipamentos(); track e.id) {
+            <option [value]="e.id">{{ e.descricao }}{{ e.numeroSerie ? ' — série ' + e.numeroSerie : '' }}{{ e.ativo ? '' : ' (inativo)' }}</option>
+          }
+        </select>
+        <p id="equipamento-erro" class="campo-erro">
+          @if (formulario.equipamentoId().touched()) {
+            @for (e of formulario.equipamentoId().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+        @if (cliente() && !carregandoEquipamentos() && equipamentos().length === 0) {
+          <p class="text-sm"><a routerLink="/equipamentos/novo" [queryParams]="{ clienteId: cliente()!.id }" class="underline">Cadastrar equipamento para este cliente</a></p>
+        }
+      </div>
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-servico">
+      <h2 id="sec-servico" class="text-lg font-semibold sm:col-span-2">Serviço</h2>
+
+      <div>
+        <label for="tipo" class="rotulo">Tipo de serviço *</label>
+        <select id="tipo" class="campo" [formField]="formulario.tipoServico" [attr.aria-invalid]="formulario.tipoServico().touched() && formulario.tipoServico().invalid()" aria-describedby="tipo-erro">
+          <option value="">Escolha o tipo</option>
+          @for (t of tipos; track t.valor) {
+            <option [value]="t.valor">{{ t.rotulo }}</option>
+          }
+        </select>
+        <p id="tipo-erro" class="campo-erro">
+          @if (formulario.tipoServico().touched()) {
+            @for (e of formulario.tipoServico().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="data" class="rotulo">Data do serviço *</label>
+        <input id="data" type="date" class="campo" [formField]="formulario.dataServico" [attr.aria-invalid]="formulario.dataServico().touched() && formulario.dataServico().invalid()" aria-describedby="data-erro" />
+        <p id="data-erro" class="campo-erro">
+          @if (formulario.dataServico().touched()) {
+            @for (e of formulario.dataServico().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      @if (catalogo().length > 0) {
+        <div class="sm:col-span-2">
+          <label for="catalogo" class="rotulo">Serviço do catálogo (opcional)</label>
+          <select id="catalogo" class="campo" [formField]="formulario.catalogoServicoId" aria-describedby="catalogo-ajuda">
+            <option value="">Nenhum</option>
+            @for (s of catalogo(); track s.id) {
+              <option [value]="s.id">{{ s.descricao }}{{ s.precoSugerido !== null ? ' — ' + reais(s.precoSugerido) : '' }}</option>
+            }
+          </select>
+          <p id="catalogo-ajuda" class="mt-1 text-sm text-slate-600 dark:text-slate-300">Preenche o texto e o total se estiverem vazios; você pode ajustar.</p>
+        </div>
+      }
+
+      <div class="sm:col-span-2">
+        <label for="servico" class="rotulo">Serviço executado</label>
+        <textarea id="servico" rows="4" class="campo" [formField]="formulario.servicoExecutado" [attr.aria-invalid]="formulario.servicoExecutado().touched() && formulario.servicoExecutado().invalid()" aria-describedby="servico-erro servico-ajuda"></textarea>
+        <p id="servico-ajuda" class="mt-1 text-sm text-slate-600 dark:text-slate-300">Obrigatório para emitir; o rascunho pode ser salvo sem ele.</p>
+        <p id="servico-erro" class="campo-erro">
+          @if (formulario.servicoExecutado().touched()) {
+            @for (e of formulario.servicoExecutado().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label for="observacoes" class="rotulo">Observações</label>
+        <textarea id="observacoes" rows="3" class="campo" [formField]="formulario.observacoes" [attr.aria-invalid]="formulario.observacoes().touched() && formulario.observacoes().invalid()" aria-describedby="observacoes-erro"></textarea>
+        <p id="observacoes-erro" class="campo-erro">
+          @if (formulario.observacoes().touched()) {
+            @for (e of formulario.observacoes().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      @if (sessao.ehGestor() && usuarios().length > 0) {
+        <div class="sm:col-span-2">
+          <label for="executor" class="rotulo">Executor</label>
+          <select id="executor" class="campo" [formField]="formulario.tecnicoId">
+            <option value="">Eu mesmo</option>
+            @for (u of usuarios(); track u.id) {
+              <option [value]="u.id">{{ u.nome }}</option>
+            }
+          </select>
+        </div>
+      }
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-verificacao">
+      <h2 id="sec-verificacao" class="text-lg font-semibold sm:col-span-2">Verificação anterior e selo</h2>
+
+      @if (sugestao(); as s) {
+        <div class="aviso sm:col-span-2" role="status">
+          <p>Sugerido pelo último relatório emitido desta balança{{ s.numero ? ' (nº ' + s.numero + ')' : '' }}: {{ s.data ? data(s.data) : 'sem data' }}{{ s.certificado ? ', certificado ' + s.certificado : '' }}. Confira e corrija se preciso.</p>
+          <button type="button" class="botao-secundario mt-2" (click)="usarSugestao()">Usar a sugestão</button>
+        </div>
+      }
+
+      @if (conferirVerificacao()) {
+        <p class="aviso sm:col-span-2" role="status">Você trocou de equipamento: confira a verificação anterior abaixo, que pode ser da balança anterior.</p>
+      }
+
+      <div>
+        <label for="verificacao-data" class="rotulo">Data da verificação anterior</label>
+        <input id="verificacao-data" type="date" class="campo" [formField]="formulario.verificacaoData" />
+      </div>
+
+      <div>
+        <label for="verificacao-certificado" class="rotulo">Certificado nº</label>
+        <input id="verificacao-certificado" class="campo" autocomplete="off" [formField]="formulario.verificacaoCertificado" [attr.aria-invalid]="formulario.verificacaoCertificado().invalid()" aria-describedby="certificado-erro" />
+        <p id="certificado-erro" class="campo-erro">
+          @for (e of formulario.verificacaoCertificado().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label for="selo" class="rotulo">Nº do selo reparador (opcional)</label>
+        <input id="selo" class="campo" autocomplete="off" [formField]="formulario.selo" [attr.aria-invalid]="formulario.selo().invalid()" aria-describedby="selo-erro" />
+        <p id="selo-erro" class="campo-erro">
+          @for (e of formulario.selo().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+    </section>
+
+    <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-valores">
+      <h2 id="sec-valores" class="text-lg font-semibold sm:col-span-2">Garantia e valores</h2>
+
+      <div class="sm:col-span-2">
+        <label for="garantia" class="rotulo">Garantia (dias)</label>
+        <input id="garantia" class="campo" inputmode="numeric" autocomplete="off" [formField]="formulario.garantiaDias" [attr.aria-invalid]="formulario.garantiaDias().touched() && formulario.garantiaDias().invalid()" aria-describedby="garantia-erro" />
+        <p id="garantia-erro" class="campo-erro">
+          @if (formulario.garantiaDias().touched()) {
+            @for (e of formulario.garantiaDias().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="total" class="rotulo">Total (R$)</label>
+        <input id="total" class="campo" inputmode="decimal" autocomplete="off" placeholder="0,00" [formField]="formulario.total" [attr.aria-invalid]="formulario.total().invalid()" aria-describedby="total-erro" />
+        <p id="total-erro" class="campo-erro">
+          @for (e of formulario.total().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="desconto" class="rotulo">Desconto (R$)</label>
+        <input id="desconto" class="campo" inputmode="decimal" autocomplete="off" placeholder="0,00" [formField]="formulario.desconto" [attr.aria-invalid]="formulario.desconto().invalid()" aria-describedby="desconto-erro" />
+        <p id="desconto-erro" class="campo-erro">
+          @for (e of formulario.desconto().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        </p>
+      </div>
+
+      <p class="text-lg font-semibold sm:col-span-2" aria-live="polite">
+        Total geral: {{ totalGeral() === null ? '—' : reais(totalGeral()) }}
+      </p>
+    </section>
+
+    <div role="alert">
+      @if (conflito()) {
+        <div class="alerta-erro">
+          <p>Outra pessoa alterou este rascunho enquanto você editava. Recarregue os dados atuais e refaça sua alteração.</p>
+          @if (id) {
+            <button type="button" class="botao-secundario mt-2" (click)="carregar(id)">Recarregar</button>
+          }
+        </div>
+      }
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <div>
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Salvando…' : 'Salvar rascunho' }}</button>
+    </div>
+  </form>
+}

@@ -26,14 +26,14 @@ describe('Estrutura (menu)', () => {
     return { el, menu: Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim()) };
   }
 
-  it('técnico vê só Clientes e Equipamentos', () => {
+  it('técnico vê Relatórios, Clientes e Equipamentos', () => {
     const { menu } = montar(false);
-    expect(menu).toEqual(['Clientes', 'Equipamentos']);
+    expect(menu).toEqual(['Relatórios', 'Clientes', 'Equipamentos']);
   });
 
   it('gestor também vê Catálogo, Empresa e Usuários', () => {
     const { menu } = montar(true);
-    expect(menu).toEqual(['Clientes', 'Equipamentos', 'Catálogo', 'Empresa', 'Usuários']);
+    expect(menu).toEqual(['Relatórios', 'Clientes', 'Equipamentos', 'Catálogo', 'Empresa', 'Usuários']);
   });
 
   it('mostra o nome e o perfil de quem está logado', () => {

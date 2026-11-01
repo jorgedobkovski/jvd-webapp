@@ -222,6 +222,28 @@ describe('UsuarioFormulario', () => {
     expect(el.textContent).toContain('Trocar senha');
   });
 
+  it('o id da rota em MAIÚSCULAS também é reconhecido como o próprio usuário', async () => {
+    const { fixture, el } = montar('ABC-DEF', 'abc-def');
+    http.expectOne(`${API}/usuarios/ABC-DEF`).flush(usuarioApi({ id: 'abc-def', perfil: 'Gestor' }));
+    await depois(fixture);
+
+    expect(el.textContent).not.toContain('Desativar');
+    expect(el.textContent).not.toContain('Redefinir senha');
+  });
+
+  it('o gestor não rebaixa o próprio perfil: o seletor fica desabilitado em si mesmo e liberado nos outros', async () => {
+    const eu = montar('u-1', 'u-1');
+    http.expectOne(`${API}/usuarios/u-1`).flush(usuarioApi({ id: 'u-1', perfil: 'Gestor' }));
+    await depois(eu.fixture);
+    expect(eu.el.querySelector<HTMLSelectElement>('#perfil')!.disabled).toBe(true);
+    TestBed.resetTestingModule();
+
+    const outro = montar('u-2', 'u-1');
+    http.expectOne(`${API}/usuarios/u-2`).flush(usuarioApi());
+    await depois(outro.fixture);
+    expect(outro.el.querySelector<HTMLSelectElement>('#perfil')!.disabled).toBe(false);
+  });
+
   it('recusa da API (último gestor) aparece na tela', async () => {
     const { fixture, el } = montar('u-2');
     http.expectOne(`${API}/usuarios/u-2`).flush(usuarioApi({ perfil: 'Gestor' }));
