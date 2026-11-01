@@ -40,6 +40,9 @@ import { Sessao } from '../core/sessao';
             <li>
               <a routerLink="/usuarios" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Usuários</a>
             </li>
+            <li>
+              <a routerLink="/importacao" routerLinkActive="bg-slate-200 dark:bg-slate-700" ariaCurrentWhenActive="page" class="block rounded-lg px-3 py-2 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Importação</a>
+            </li>
             }
           </ul>
         </nav>

@@ -3,8 +3,8 @@ import { paramsDeRelatorios, rotuloDoEstado, rotuloDoTipo } from './relatorios-a
 describe('relatorios-api', () => {
   it('parâmetros: só envia o preenchido, com página e tamanho padrão', () => {
     expect(paramsDeRelatorios({})).toEqual({ pagina: 1, tamanho: 20 });
-    expect(paramsDeRelatorios({ numero: 0, status: 'Emitido', tipo: 'Corretiva', de: '2026-10-01', ate: '2026-10-31', clienteId: 'c', equipamentoId: 'e', pagina: 2, tamanho: 5 })).toEqual({
-      numero: 0, status: 'Emitido', tipo: 'Corretiva', de: '2026-10-01', ate: '2026-10-31', clienteId: 'c', equipamentoId: 'e', pagina: 2, tamanho: 5,
+    expect(paramsDeRelatorios({ numero: 0, status: 'Emitido', tipo: 'Corretiva', de: '2026-10-01', ate: '2026-10-31', clienteId: 'c', equipamentoId: 'e', tecnicoId: 't', pagina: 2, tamanho: 5 })).toEqual({
+      numero: 0, status: 'Emitido', tipo: 'Corretiva', de: '2026-10-01', ate: '2026-10-31', clienteId: 'c', equipamentoId: 'e', tecnicoId: 't', pagina: 2, tamanho: 5,
     });
   });
 

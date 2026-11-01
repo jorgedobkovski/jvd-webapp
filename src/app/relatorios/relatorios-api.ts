@@ -136,6 +136,8 @@ export interface FiltroDeRelatorios {
   ate?: string;
   clienteId?: string;
   equipamentoId?: string;
+  /** Só o gestor pode filtrar por executor (para o técnico a API ignora). */
+  tecnicoId?: string;
   pagina?: number;
   tamanho?: number;
 }
@@ -149,6 +151,7 @@ export function paramsDeRelatorios(f: FiltroDeRelatorios): Record<string, string
   if (f.ate) params['ate'] = f.ate;
   if (f.clienteId) params['clienteId'] = f.clienteId;
   if (f.equipamentoId) params['equipamentoId'] = f.equipamentoId;
+  if (f.tecnicoId) params['tecnicoId'] = f.tecnicoId;
   params['pagina'] = f.pagina ?? 1;
   params['tamanho'] = f.tamanho ?? 20;
   return params;

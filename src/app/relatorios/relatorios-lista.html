@@ -31,7 +31,27 @@
       }
     </select>
   </div>
-  <div class="hidden lg:block"></div>
+  @if (sessao.ehGestor()) {
+    @if (executores().length > 0) {
+      <div>
+        <label for="executor" class="rotulo">Executor</label>
+        <select id="executor" class="campo" [formField]="formulario.tecnicoId">
+          <option value="">Todos</option>
+          @for (u of executores(); track u.id) {
+            <option [value]="u.id">{{ u.nome }}{{ u.ativo ? '' : ' (inativo)' }}</option>
+          }
+        </select>
+      </div>
+    }
+    <div class="sm:col-span-2 lg:col-span-4">
+      <jvd-seletor-de-cliente [(cliente)]="cliente" rotulo="Cliente (opcional)" />
+      @if (cliente()) {
+        <p class="mt-2"><button type="button" class="botao-secundario" (click)="cliente.set(null)">Limpar o filtro de cliente</button></p>
+      }
+    </div>
+  } @else {
+    <div class="hidden lg:block"></div>
+  }
   <div>
     <label for="de" class="rotulo">Serviço de</label>
     <input id="de" type="date" class="campo" [formField]="formulario.de" />

@@ -1,0 +1,126 @@
+<h1 class="text-2xl font-semibold">Importação de planilhas</h1>
+<p class="aviso mt-3" role="note">
+  Primeiro <strong>simule</strong>: a simulação lê e confere a planilha e mostra o resultado, <strong>sem gravar nada</strong>. Só depois dela dá para importar de verdade. A mesma planilha não pode ser importada duas vezes.
+</p>
+
+<form class="cartao mt-4 grid gap-4" novalidate (submit)="$event.preventDefault(); simular()">
+  <div>
+    <label for="tipo" class="rotulo">O que você vai importar</label>
+    <select id="tipo" class="campo" [formField]="formulario.tipo" aria-describedby="tipo-ajuda">
+      @for (t of tipos; track t.valor) {
+        <option [value]="t.valor">{{ t.rotulo }}</option>
+      }
+    </select>
+    <p id="tipo-ajuda" class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ modelo().tipo === 'clientes' ? tipos[0].ajuda : tipos[1].ajuda }}</p>
+  </div>
+
+  <div>
+    <label for="arquivo" class="rotulo">Planilha (.xlsx, até 10 MB)</label>
+    <input
+      id="arquivo"
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      class="campo"
+      aria-describedby="arquivo-erro"
+      [attr.aria-invalid]="erroDoArquivo() !== ''"
+      (change)="escolherArquivo($event)"
+    />
+    <p id="arquivo-erro" class="campo-erro" role="alert">{{ erroDoArquivo() }}</p>
+    @if (arquivo(); as a) {
+      <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">Arquivo escolhido: {{ a.name }} ({{ (a.size / 1024).toFixed(0) }} KB)</p>
+    }
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <button type="submit" class="botao-primario" [disabled]="trabalhando() !== null">{{ trabalhando() === 'simulando' ? 'Simulando…' : 'Simular importação' }}</button>
+  </div>
+</form>
+
+<div role="alert">
+  @if (erros().length > 0) {
+    <div class="alerta-erro mt-3">
+      <ul class="list-inside list-disc">
+        @for (mensagem of erros(); track $index) {
+          <li>{{ mensagem }}</li>
+        }
+      </ul>
+    </div>
+  }
+</div>
+
+@if (relatorio(); as r) {
+  <section class="mt-6" aria-labelledby="titulo-resultado">
+    <h2 id="titulo-resultado" class="text-xl font-semibold">{{ r.simulacao ? 'Resultado da simulação (nada foi gravado)' : 'Importação concluída' }}</h2>
+    @if (concluida()) {
+      <p class="mt-1 rounded-lg border border-green-700 bg-green-50 p-3 text-sm text-green-900 dark:border-green-400 dark:bg-green-950 dark:text-green-100" role="status">
+        Planilha importada. {{ r.totalImportados }} registro(s) gravado(s).
+      </p>
+    }
+    <div class="mt-3">
+      <jvd-resultado-da-importacao [totais]="r" [ocorrencias]="r.ocorrencias" [simulacao]="r.simulacao" />
+    </div>
+
+    @if (r.simulacao) {
+      <div class="mt-4">
+        @if (r.totalImportados === 0) {
+          <p class="aviso" role="status">Nada a importar neste arquivo. Revise as ocorrências acima.</p>
+        } @else if (podeImportar() && !confirmando()) {
+          <button type="button" class="botao-primario" (click)="confirmando.set(true)">Importar de verdade…</button>
+        }
+      </div>
+      @if (confirmando()) {
+        <div class="aviso mt-3" role="alertdialog" aria-labelledby="titulo-confirmar">
+          <p id="titulo-confirmar" class="font-semibold">Importar de verdade?</p>
+          <p>{{ r.totalImportados }} registro(s) serão gravados no sistema, tudo ou nada, e esta planilha <strong>não poderá ser importada de novo</strong>.</p>
+          <div class="mt-2 flex gap-2">
+            <button #confirmar type="button" class="botao-perigo" [disabled]="trabalhando() !== null" (click)="importar()">{{ trabalhando() === 'importando' ? 'Importando…' : 'Sim, importar' }}</button>
+            <button type="button" class="botao-secundario" (click)="confirmando.set(false)">Voltar</button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+}
+
+<section class="mt-8" aria-labelledby="titulo-historico">
+  <h2 id="titulo-historico" class="text-xl font-semibold">Importações anteriores</h2>
+  @if (historico.error()) {
+    <div class="alerta-erro mt-2" role="alert">
+      <p>Não foi possível carregar o histórico.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="historico.reload()">Tentar de novo</button>
+    </div>
+  } @else if (historico.isLoading() && !historico.hasValue()) {
+    <p class="mt-2 text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (itensDoHistorico().length === 0) {
+    <p class="cartao mt-2 text-slate-700 dark:text-slate-200">Nenhuma importação feita ainda.</p>
+  } @else {
+    <div class="mt-2 overflow-x-auto">
+      <table class="cartao w-full text-left text-sm">
+        <caption class="sr-only">Importações anteriores</caption>
+        <thead>
+          <tr class="border-b border-slate-300 dark:border-slate-700">
+            <th scope="col" class="p-2">Quando</th>
+            <th scope="col" class="p-2">Tipo</th>
+            <th scope="col" class="p-2">Arquivo</th>
+            <th scope="col" class="p-2">Lidas</th>
+            <th scope="col" class="p-2">Importadas</th>
+            <th scope="col" class="p-2">Rejeitadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of itensDoHistorico(); track i.id) {
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <td class="p-2"><a [routerLink]="['/importacao', i.id]" class="font-medium underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">{{ dataHora(i.executadaEm) }}</a></td>
+              <td class="p-2">{{ i.tipo }}</td>
+              <td class="p-2">{{ i.nomeArquivo }}</td>
+              <td class="p-2">{{ i.totalLidos }}</td>
+              <td class="p-2">{{ i.totalImportados }}</td>
+              <td class="p-2">{{ i.totalRejeitados }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <jvd-paginacao [pagina]="pagina()" [tamanho]="10" [total]="totalDoHistorico()" (mudar)="pagina.set($event)" />
+  }
+</section>

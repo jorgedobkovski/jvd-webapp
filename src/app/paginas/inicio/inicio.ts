@@ -19,6 +19,7 @@ import { Sessao } from '../../core/sessao';
       @if (sessao.ehGestor()) {
         <li><a routerLink="/catalogo" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Catálogo de serviços</a></li>
         <li><a routerLink="/emissor" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Dados da empresa</a></li>
+        <li><a routerLink="/importacao" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Importação de planilhas</a></li>
         <li><a routerLink="/usuarios" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Usuários</a></li>
       }
     </ul>
