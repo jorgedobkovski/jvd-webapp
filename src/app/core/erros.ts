@@ -36,3 +36,22 @@ export function lerErro(erro: unknown): ErroDaApi {
 function montar(status: number, codigo: string | undefined, mensagem: string, lista: string[]): ErroDaApi {
   return { status, codigo, mensagem, mensagens: lista.length > 0 ? lista : [mensagem] };
 }
+
+/**
+ * Como `lerErro`, mas para chamadas que pedem um ARQUIVO (`responseType: 'blob'`): a API responde o erro em JSON, e o
+ * HttpClient o entrega como Blob. Lê o Blob, converte de volta e só então extrai a mensagem fixa da API.
+ */
+export async function lerErroDeArquivo(erro: unknown): Promise<ErroDaApi> {
+  if (erro instanceof HttpErrorResponse && erro.error instanceof Blob) {
+    let corpo: unknown = null;
+    try {
+      corpo = JSON.parse(await erro.error.text());
+    } catch {
+      // corpo que não é JSON: cai na mensagem genérica por status
+    }
+
+    return lerErro(new HttpErrorResponse({ status: erro.status, statusText: erro.statusText, url: erro.url ?? undefined, error: corpo }));
+  }
+
+  return lerErro(erro);
+}

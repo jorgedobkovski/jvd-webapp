@@ -21,3 +21,36 @@ export function formatarData(iso: string | null | undefined): string {
   const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   return partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : iso;
 }
+
+export interface Periodo {
+  de: string;
+  ate: string;
+}
+
+function doisDigitos(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function ultimoDiaDoMes(ano: number, mes: number): number {
+  return new Date(ano, mes, 0).getDate();
+}
+
+/** Do primeiro ao último dia do mês de `hoje` (`aaaa-mm-dd`). */
+export function esteMes(hojeIso: string): Periodo {
+  const [ano, mes] = hojeIso.split('-').map(Number);
+  return { de: `${ano}-${doisDigitos(mes)}-01`, ate: `${ano}-${doisDigitos(mes)}-${doisDigitos(ultimoDiaDoMes(ano, mes))}` };
+}
+
+/** O mês anterior ao de `hoje`, inclusive virando o ano (janeiro → dezembro do ano anterior). */
+export function mesPassado(hojeIso: string): Periodo {
+  const [ano, mes] = hojeIso.split('-').map(Number);
+  const anoDoMes = mes === 1 ? ano - 1 : ano;
+  const mesAnterior = mes === 1 ? 12 : mes - 1;
+  return { de: `${anoDoMes}-${doisDigitos(mesAnterior)}-01`, ate: `${anoDoMes}-${doisDigitos(mesAnterior)}-${doisDigitos(ultimoDiaDoMes(anoDoMes, mesAnterior))}` };
+}
+
+/** De 1º de janeiro a 31 de dezembro do ano de `hoje`. */
+export function esteAno(hojeIso: string): Periodo {
+  const ano = Number(hojeIso.split('-')[0]);
+  return { de: `${ano}-01-01`, ate: `${ano}-12-31` };
+}

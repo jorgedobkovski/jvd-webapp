@@ -34,6 +34,7 @@ export const routes: Routes = [
           { path: 'catalogo/:id/editar', loadComponent: () => import('./cadastros/catalogo/servico-formulario').then((m) => m.ServicoFormulario) },
           { path: 'catalogo/:id', redirectTo: 'catalogo/:id/editar' },
           { path: 'emissor', loadComponent: () => import('./cadastros/emissor/emissor-formulario').then((m) => m.EmissorFormulario) },
+          { path: 'indicadores', loadComponent: () => import('./gerencial/indicadores').then((m) => m.IndicadoresPagina) },
           { path: 'importacao', loadComponent: () => import('./importacao/importacao').then((m) => m.ImportacaoTela) },
           { path: 'importacao/:id', loadComponent: () => import('./importacao/importacao-detalhe').then((m) => m.ImportacaoDetalheTela) },
           { path: 'usuarios', loadComponent: () => import('./cadastros/usuarios/usuarios-lista').then((m) => m.UsuariosLista) },

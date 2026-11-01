@@ -1,0 +1,117 @@
+<h1 class="text-2xl font-semibold">Indicadores</h1>
+<p class="mt-1 text-sm text-slate-700 dark:text-slate-200">Contam apenas relatórios emitidos, pela data do serviço. Cancelados e rascunhos ficam de fora.</p>
+
+<form class="cartao mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" (submit)="$event.preventDefault(); atualizar()" role="search">
+  <div>
+    <label for="de" class="rotulo">Serviço de</label>
+    <input id="de" type="date" class="campo" [formField]="formulario.de" />
+  </div>
+  <div>
+    <label for="ate" class="rotulo">até</label>
+    <input id="ate" type="date" class="campo" [formField]="formulario.ate" [attr.aria-invalid]="formulario.ate().invalid()" aria-describedby="ate-erro" />
+    <p id="ate-erro" class="campo-erro">
+      @for (e of formulario.ate().errors(); track e.kind) {
+        <span class="block">{{ e.message }}</span>
+      }
+    </p>
+  </div>
+  <div class="flex flex-wrap items-end gap-2 sm:col-span-2">
+    <button type="button" class="botao-secundario" (click)="periodoRapido('mes')">Este mês</button>
+    <button type="button" class="botao-secundario" (click)="periodoRapido('passado')">Mês passado</button>
+    <button type="button" class="botao-secundario" (click)="periodoRapido('ano')">Este ano</button>
+  </div>
+  <div>
+    <label for="tipo" class="rotulo">Tipo (só na planilha)</label>
+    <select id="tipo" class="campo" [formField]="formulario.tipo">
+      <option value="">Todos</option>
+      @for (t of tipos; track t.valor) {
+        <option [value]="t.valor">{{ t.rotulo }}</option>
+      }
+    </select>
+  </div>
+  @if (executores().length > 0) {
+    <div>
+      <label for="executor" class="rotulo">Executor (só na planilha)</label>
+      <select id="executor" class="campo" [formField]="formulario.tecnicoId">
+        <option value="">Todos</option>
+        @for (u of executores(); track u.id) {
+          <option [value]="u.id">{{ u.nome }}{{ u.ativo ? '' : ' (inativo)' }}</option>
+        }
+      </select>
+    </div>
+  }
+  <div class="sm:col-span-2 lg:col-span-4">
+    <jvd-seletor-de-cliente [(cliente)]="cliente" rotulo="Cliente (só na planilha, opcional)" />
+    @if (cliente()) {
+      <p class="mt-2"><button type="button" class="botao-secundario" (click)="cliente.set(null)">Limpar o filtro de cliente</button></p>
+    }
+  </div>
+  <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
+    <button type="submit" class="botao-primario">Atualizar</button>
+    <button type="button" class="botao-secundario" [disabled]="exportando()" (click)="exportar()">
+      {{ exportando() ? 'Gerando planilha…' : 'Baixar planilha (.xlsx)' }}
+    </button>
+  </div>
+</form>
+
+@if (erroDaExportacao()) {
+  <div class="alerta-erro mt-3" role="alert">{{ erroDaExportacao() }}</div>
+}
+
+<section class="mt-4" aria-live="polite" aria-busy="{{ resultado.isLoading() }}">
+  @if (resultado.error()) {
+    <div class="alerta-erro" role="alert">
+      <p>Não foi possível carregar os indicadores.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="tentarDeNovo()">Tentar de novo</button>
+    </div>
+  } @else if (!indicadores()) {
+    <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (vazio()) {
+    <p class="cartao text-slate-700 dark:text-slate-200">Nenhum relatório emitido no período.</p>
+  } @else {
+    @let i = indicadores()!;
+    <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="cartao"><dt class="text-sm">Relatórios emitidos</dt><dd class="text-2xl font-semibold" data-testid="quantidade">{{ i.totais.quantidade }}</dd></div>
+      <div class="cartao"><dt class="text-sm">Total</dt><dd class="text-2xl font-semibold" data-testid="total">{{ reais(i.totais.total) }}</dd></div>
+      <div class="cartao"><dt class="text-sm">Descontos</dt><dd class="text-2xl font-semibold" data-testid="descontos">{{ reais(i.totais.descontos) }}</dd></div>
+      <div class="cartao"><dt class="text-sm">Total geral</dt><dd class="text-2xl font-semibold" data-testid="total-geral">{{ reais(i.totais.totalGeral) }}</dd></div>
+      <div class="cartao"><dt class="text-sm">Ticket médio</dt><dd class="text-2xl font-semibold" data-testid="ticket">{{ reais(i.totais.ticketMedio) }}</dd></div>
+    </dl>
+
+    <div class="mt-4 grid gap-4 lg:grid-cols-3">
+      <section class="cartao" aria-labelledby="t-executor">
+        <h2 id="t-executor" class="text-lg font-semibold">Por executor</h2>
+        <table class="mt-2 w-full text-left text-sm" data-testid="por-executor">
+          <thead><tr><th scope="col" class="p-1">Executor</th><th scope="col" class="p-1 text-right">Qtd.</th><th scope="col" class="p-1 text-right">Total geral</th></tr></thead>
+          <tbody>
+            @for (x of i.porExecutor; track x.tecnicoId) {
+              <tr><td class="p-1">{{ x.tecnicoNome }}</td><td class="p-1 text-right">{{ x.quantidade }}</td><td class="p-1 text-right">{{ reais(x.totalGeral) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+      <section class="cartao" aria-labelledby="t-tipo">
+        <h2 id="t-tipo" class="text-lg font-semibold">Por tipo de serviço</h2>
+        <table class="mt-2 w-full text-left text-sm" data-testid="por-tipo">
+          <thead><tr><th scope="col" class="p-1">Tipo</th><th scope="col" class="p-1 text-right">Qtd.</th><th scope="col" class="p-1 text-right">Total geral</th></tr></thead>
+          <tbody>
+            @for (x of i.porTipo; track x.tipo) {
+              <tr><td class="p-1">{{ rotuloDoTipo(x.tipo) }}</td><td class="p-1 text-right">{{ x.quantidade }}</td><td class="p-1 text-right">{{ reais(x.totalGeral) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+      <section class="cartao" aria-labelledby="t-cliente">
+        <h2 id="t-cliente" class="text-lg font-semibold">Maiores clientes</h2>
+        <table class="mt-2 w-full text-left text-sm" data-testid="por-cliente">
+          <thead><tr><th scope="col" class="p-1">Cliente</th><th scope="col" class="p-1 text-right">Qtd.</th><th scope="col" class="p-1 text-right">Total geral</th></tr></thead>
+          <tbody>
+            @for (x of i.maioresClientes; track x.clienteId) {
+              <tr><td class="p-1">{{ x.clienteNome }}</td><td class="p-1 text-right">{{ x.quantidade }}</td><td class="p-1 text-right">{{ reais(x.totalGeral) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+  }
+</section>
