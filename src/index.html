@@ -6,6 +6,19 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script>
+      // Aplica o tema antes da primeira pintura (sem piscar). A mesma regra do serviço Tema: escolha salva, senão o sistema.
+      (function () {
+        var escuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        try {
+          var salvo = localStorage.getItem('jvd.tema');
+          if (salvo === 'escuro') escuro = true;
+          else if (salvo === 'claro') escuro = false;
+        } catch (e) {}
+        document.documentElement.classList.toggle('dark', escuro);
+        document.documentElement.style.colorScheme = escuro ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <jvd-root></jvd-root>

@@ -2,6 +2,9 @@
 
 @import 'tailwindcss';
 
+/* O tema escuro vem da classe `dark` no <html> (serviço Tema), não só do sistema: assim o botão pode trocar. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Peças visuais reutilizadas pelos formulários e listas (sóbrio, claro/escuro automático, contraste AA). */
 @layer components {
   .rotulo {

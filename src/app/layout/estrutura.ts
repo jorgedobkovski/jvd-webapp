@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { BotaoDeTema } from '../compartilhado/botao-de-tema';
 import { Sessao } from '../core/sessao';
 
 /** Moldura da área logada: cabeçalho com o usuário, "trocar senha" e "sair", e o conteúdo da rota. */
 @Component({
   selector: 'jvd-estrutura',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, BotaoDeTema],
   template: `
     <div class="flex min-h-dvh flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -14,6 +15,7 @@ import { Sessao } from '../core/sessao';
           <div class="flex items-center gap-3 text-sm">
             <span class="max-w-[12rem] truncate sm:max-w-none">{{ sessao.usuario()?.nome }} · {{ sessao.ehGestor() ? 'Gestor' : 'Técnico' }}</span>
             <a routerLink="/trocar-senha" class="underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Trocar senha</a>
+            <jvd-botao-de-tema />
             <button type="button" class="rounded-lg border border-slate-400 px-3 py-1.5 font-medium focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500" (click)="sair()">
               Sair
             </button>
