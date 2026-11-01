@@ -97,33 +97,7 @@
       }
     </fieldset>
 
-    <div>
-      <label for="descricao" class="rotulo">Descrição (tipo ou modelo) *</label>
-      <input id="descricao" class="campo" autocomplete="off" [formField]="formulario.descricao" [attr.aria-invalid]="formulario.descricao().touched() && formulario.descricao().invalid()" aria-describedby="descricao-erro" />
-      <p id="descricao-erro" class="campo-erro">
-        @if (formulario.descricao().touched()) {
-          @for (e of formulario.descricao().errors(); track e.kind) {
-            <span class="block">{{ e.message }}</span>
-          }
-        }
-      </p>
-    </div>
-
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label for="serie" class="rotulo">Número de série</label>
-        <input id="serie" class="campo" autocomplete="off" [formField]="formulario.numeroSerie" />
-      </div>
-      <div>
-        <label for="inmetro" class="rotulo">Número do INMETRO</label>
-        <input id="inmetro" class="campo" autocomplete="off" [formField]="formulario.numeroInmetro" />
-      </div>
-    </div>
-
-    <div>
-      <label for="observacoes" class="rotulo">Observações</label>
-      <textarea id="observacoes" rows="3" class="campo" [formField]="formulario.observacoes"></textarea>
-    </div>
+    <jvd-campos-do-equipamento [campos]="formulario" />
 
     <div role="alert">
       @if (conflito()) {

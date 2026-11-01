@@ -1,7 +1,10 @@
-import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormField, form, maxLength, pattern, required, submit, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Equipamento, EquipamentosApi } from '../cadastros/equipamentos/equipamentos-api';
+import { ClienteEmJanela } from '../cadastros/clientes/cliente-em-janela';
+import { ClienteSalvo } from '../cadastros/clientes/clientes-api';
+import { EquipamentoEmJanela } from '../cadastros/equipamentos/equipamento-em-janela';
+import { Equipamento, EquipamentoSalvo, EquipamentosApi } from '../cadastros/equipamentos/equipamentos-api';
 import { CatalogoApi, Servico } from '../cadastros/catalogo/catalogo-api';
 import { UsuarioDoSistema, UsuariosApi } from '../cadastros/usuarios/usuarios-api';
 import { formatarData, hoje } from '../compartilhado/datas';
@@ -23,7 +26,7 @@ interface SugestaoDeVerificacao {
  */
 @Component({
   selector: 'jvd-relatorio-formulario',
-  imports: [FormField, RouterLink, SeletorDeCliente],
+  imports: [FormField, RouterLink, SeletorDeCliente, ClienteEmJanela, EquipamentoEmJanela],
   templateUrl: './relatorio-formulario.html',
 })
 export class RelatorioFormulario {
@@ -85,6 +88,11 @@ export class RelatorioFormulario {
   protected readonly carregandoEquipamentos = signal(false);
   protected readonly semCliente = signal(false);
   protected readonly sugestao = signal<SugestaoDeVerificacao | null>(null);
+  /** Janela de cadastro aberta sobre a página (cliente ou equipamento novo), sem perder o que já foi preenchido. */
+  protected readonly janela = signal<'cliente' | 'equipamento' | null>(null);
+  private readonly campoEquipamento = viewChild<ElementRef<HTMLSelectElement>>('campoEquipamento');
+  /** Avisos de duplicidade do que acabou de ser cadastrado (não bloqueiam; só mensagem, sem sair da página). */
+  protected readonly avisosDeCadastro = signal<string[]>([]);
 
   private readonly versao = signal('');
   protected readonly carregando = signal(this.edicao);
@@ -197,9 +205,30 @@ export class RelatorioFormulario {
   /** Chamado quando a pessoa escolhe outro cliente: a balança escolhida deixa de valer. */
   protected async aoEscolherCliente(c: ClienteEscolhido): Promise<void> {
     this.semCliente.set(false);
+    this.avisosDeCadastro.set([]);
     this.modelo.update((m) => ({ ...m, equipamentoId: '' }));
     this.sugestao.set(null);
     await this.carregarEquipamentosDoCliente(c.id);
+  }
+
+  /** Cliente cadastrado na janela: vira o cliente do relatório e, como ainda não tem balança, já abre o cadastro dela. */
+  protected async aoCriarCliente(salvo: ClienteSalvo): Promise<void> {
+    const novo = { id: salvo.cliente.id, nome: salvo.cliente.nomeRazaoSocial };
+    this.cliente.set(novo);
+    const carga = this.aoEscolherCliente(novo); // limpa os avisos e a balança, de forma síncrona, antes de carregar a lista
+    this.avisosDeCadastro.set(salvo.avisos.map((a) => a.mensagem));
+    this.janela.set('equipamento');
+    await carga;
+  }
+
+  /** Equipamento cadastrado na janela: entra na lista do cliente e já fica escolhido. */
+  protected async aoCriarEquipamento(salvo: EquipamentoSalvo): Promise<void> {
+    this.janela.set(null);
+    this.avisosDeCadastro.update((atuais) => [...atuais, ...salvo.avisos.map((a) => a.mensagem)]);
+    await this.carregarEquipamentosDoCliente(salvo.equipamento.clienteId);
+    if (this.cliente()?.id === salvo.equipamento.clienteId) this.modelo.update((m) => ({ ...m, equipamentoId: salvo.equipamento.id }));
+    // A janela (e o botão que a abriu no encadeamento) saiu da tela: sem isto o foco cairia no <body>.
+    this.campoEquipamento()?.nativeElement.focus();
   }
 
   private async carregarEquipamentosDoCliente(clienteId: string): Promise<void> {
