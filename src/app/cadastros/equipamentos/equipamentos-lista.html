@@ -1,0 +1,90 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">Equipamentos</h1>
+  <a routerLink="/equipamentos/novo" class="botao-primario">Novo equipamento</a>
+</div>
+
+<form class="cartao mt-4 grid gap-3 sm:grid-cols-3" (submit)="$event.preventDefault(); buscar()" role="search">
+  <div class="sm:col-span-2">
+    <label for="busca" class="rotulo">Buscar</label>
+    <input id="busca" type="search" class="campo" placeholder="Descrição, série, INMETRO ou cliente" autocomplete="off" [formField]="formulario.busca" />
+  </div>
+  @if (sessao.ehGestor()) {
+    <div>
+      <label for="situacao" class="rotulo">Situação</label>
+      <select id="situacao" class="campo" [formField]="formulario.situacao">
+        <option value="todos">Todos</option>
+        <option value="ativos">Ativos</option>
+        <option value="inativos">Inativos</option>
+      </select>
+    </div>
+  }
+  <div class="sm:col-span-3">
+    <button type="submit" class="botao-primario w-full sm:w-auto">Buscar</button>
+  </div>
+</form>
+
+<section class="mt-4" aria-live="polite" aria-busy="{{ resultado.isLoading() }}">
+  @if (resultado.error()) {
+    <div class="alerta-erro" role="alert">
+      <p>Não foi possível carregar os equipamentos.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="tentarDeNovo()">Tentar de novo</button>
+    </div>
+  } @else if (resultado.isLoading() && !resultado.hasValue()) {
+    <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (itens().length === 0) {
+    <p class="cartao text-slate-700 dark:text-slate-200">Nenhum equipamento encontrado.</p>
+  } @else {
+    <ul class="grid gap-3 md:hidden">
+      @for (e of itens(); track e.id) {
+        <li class="cartao">
+          <a [routerLink]="['/equipamentos', e.id, 'editar']" class="block focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+            <span class="block text-lg font-semibold">{{ e.descricao }}</span>
+            <span class="block text-sm text-slate-700 dark:text-slate-200">{{ e.clienteNome }}</span>
+            <span class="mt-1 block text-sm text-slate-700 dark:text-slate-200">
+              {{ e.numeroSerie ? 'Série ' + e.numeroSerie : 'Sem série' }}{{ e.numeroInmetro ? ' · INMETRO ' + e.numeroInmetro : '' }}
+            </span>
+            @if (!e.ativo) {
+              <span class="etiqueta mt-2">Inativo</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="hidden overflow-x-auto md:block">
+      <table class="cartao w-full text-left text-sm">
+        <caption class="sr-only">Equipamentos</caption>
+        <thead>
+          <tr class="border-b border-slate-300 dark:border-slate-700">
+            <th scope="col" class="p-2">Descrição</th>
+            <th scope="col" class="p-2">Cliente</th>
+            <th scope="col" class="p-2">Série</th>
+            <th scope="col" class="p-2">INMETRO</th>
+            <th scope="col" class="p-2">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of itens(); track e.id) {
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <td class="p-2">
+                <a [routerLink]="['/equipamentos', e.id, 'editar']" class="font-medium underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+                  {{ e.descricao }}
+                </a>
+              </td>
+              <td class="p-2">{{ e.clienteNome }}</td>
+              <td class="p-2">{{ e.numeroSerie ?? '—' }}</td>
+              <td class="p-2">{{ e.numeroInmetro ?? '—' }}</td>
+              <td class="p-2">
+                @if (!e.ativo) {
+                  <span class="etiqueta">Inativo</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <jvd-paginacao [pagina]="pagina()" [tamanho]="tamanho()" [total]="total()" (mudar)="irParaPagina($event)" />
+  }
+</section>

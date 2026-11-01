@@ -1,0 +1,159 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{{ titulo() }}</h1>
+  <a routerLink="/equipamentos" class="botao-secundario">Voltar</a>
+</div>
+
+@if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (semCadastro()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+  </div>
+} @else {
+  @if (equipamento(); as atual) {
+    <p class="mt-2 flex flex-wrap items-center gap-2">
+      @if (!atual.ativo) {
+        <span class="etiqueta">Inativo</span>
+      }
+      @if (sessao.ehGestor()) {
+        @if (!confirmando()) {
+          <button type="button" class="botao-secundario" (click)="confirmando.set(true)">{{ atual.ativo ? 'Desativar' : 'Reativar' }}</button>
+        }
+      }
+    </p>
+    @if (confirmando()) {
+      <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar alteração de situação">
+        <p>{{ atual.ativo ? 'Desativar este equipamento? Técnicos deixam de vê-lo.' : 'Reativar este equipamento?' }}</p>
+        <div class="mt-2 flex gap-2">
+          <button type="button" [class]="atual.ativo ? 'botao-perigo' : 'botao-primario'" [disabled]="enviando()" (click)="alternarSituacao(!atual.ativo)">
+            {{ atual.ativo ? 'Sim, desativar' : 'Sim, reativar' }}
+          </button>
+          <button type="button" class="botao-secundario" (click)="confirmando.set(false)">Voltar</button>
+        </div>
+      </div>
+    }
+  }
+
+  <form class="cartao mt-4 grid gap-4" novalidate (submit)="$event.preventDefault(); salvar()">
+    <fieldset>
+      <legend class="rotulo">Cliente *</legend>
+      @if (cliente(); as escolhido) {
+        @if (!trocandoCliente()) {
+          <p class="mt-1 flex flex-wrap items-center gap-3">
+            <a [routerLink]="['/clientes', escolhido.id]" class="font-semibold underline">{{ escolhido.nome }}</a>
+            <button type="button" class="botao-secundario" (click)="trocandoCliente.set(true)">{{ edicao ? 'Transferir para outro cliente' : 'Trocar cliente' }}</button>
+          </p>
+        }
+      }
+      @if (vaiTransferir()) {
+        <p class="aviso mt-2" role="status">Ao salvar, esta balança será transferida para o cliente escolhido (os relatórios antigos não mudam).</p>
+      }
+
+      @if (trocandoCliente()) {
+        <div class="mt-1 flex gap-2">
+          <input
+            #campoBusca
+            id="busca-cliente"
+            type="search"
+            class="campo !mt-0"
+            placeholder="Nome, fantasia, cidade ou CPF/CNPJ"
+            aria-label="Buscar cliente"
+            autocomplete="off"
+            [value]="buscaCliente()"
+            (input)="buscaCliente.set(campoBusca.value)"
+            (keydown.enter)="$event.preventDefault(); procurarCliente()"
+          />
+          <button type="button" class="botao-secundario" [disabled]="buscandoCliente()" (click)="procurarCliente()">Buscar</button>
+        </div>
+        @if (cliente() !== null) {
+          <p class="mt-2"><button type="button" class="botao-secundario" (click)="cancelarTroca()">Cancelar e manter {{ cliente()!.nome }}</button></p>
+        }
+        <div aria-live="polite">
+          @if (buscouCliente() && clientesEncontrados().length === 0) {
+            <p class="mt-2 text-sm text-slate-700 dark:text-slate-200">Nenhum cliente ativo encontrado.</p>
+          }
+          @if (clientesEncontrados().length > 0) {
+            <ul class="mt-2 grid gap-2">
+              @for (c of clientesEncontrados(); track c.id) {
+                <li>
+                  <button type="button" class="botao-secundario w-full !justify-start text-left" (click)="escolherCliente(c)">
+                    <span>
+                      <span class="block font-semibold">{{ c.nomeRazaoSocial }}</span>
+                      <span class="block text-sm font-normal">{{ c.documento ? documento(c.documento) : 'Sem CPF/CNPJ' }}{{ c.cidade ? ' · ' + c.cidade : '' }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (semCliente()) {
+        <p class="campo-erro" role="alert">Escolha o cliente.</p>
+      }
+    </fieldset>
+
+    <div>
+      <label for="descricao" class="rotulo">Descrição (tipo ou modelo) *</label>
+      <input id="descricao" class="campo" autocomplete="off" [formField]="formulario.descricao" [attr.aria-invalid]="formulario.descricao().touched() && formulario.descricao().invalid()" aria-describedby="descricao-erro" />
+      <p id="descricao-erro" class="campo-erro">
+        @if (formulario.descricao().touched()) {
+          @for (e of formulario.descricao().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="serie" class="rotulo">Número de série</label>
+        <input id="serie" class="campo" autocomplete="off" [formField]="formulario.numeroSerie" />
+      </div>
+      <div>
+        <label for="inmetro" class="rotulo">Número do INMETRO</label>
+        <input id="inmetro" class="campo" autocomplete="off" [formField]="formulario.numeroInmetro" />
+      </div>
+    </div>
+
+    <div>
+      <label for="observacoes" class="rotulo">Observações</label>
+      <textarea id="observacoes" rows="3" class="campo" [formField]="formulario.observacoes"></textarea>
+    </div>
+
+    <div role="alert">
+      @if (conflito()) {
+        <div class="alerta-erro">
+          <p>Outra pessoa alterou este equipamento enquanto você editava. Recarregue os dados atuais e refaça sua alteração.</p>
+          <button type="button" class="botao-secundario mt-2" (click)="recarregar()">Recarregar</button>
+        </div>
+      }
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    @if (salvo()) {
+      <p class="rounded-lg border border-green-700 bg-green-50 p-3 text-sm text-green-900 dark:border-green-400 dark:bg-green-950 dark:text-green-100" role="status">
+        Equipamento salvo.
+      </p>
+    }
+    <jvd-avisos-do-cadastro [avisos]="avisos()" rotaBase="/equipamentos" />
+
+    <div>
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">
+        {{ enviando() ? 'Salvando…' : 'Salvar' }}
+      </button>
+    </div>
+  </form>
+}

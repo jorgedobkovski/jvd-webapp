@@ -1,0 +1,125 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">Clientes</h1>
+  <a routerLink="/clientes/novo" class="botao-primario">Novo cliente</a>
+</div>
+
+<form class="cartao mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" (submit)="$event.preventDefault(); buscar()" role="search">
+  <div class="sm:col-span-2">
+    <label for="busca" class="rotulo">Buscar</label>
+    <input
+      id="busca"
+      type="search"
+      class="campo"
+      placeholder="Nome, fantasia, cidade ou CPF/CNPJ"
+      autocomplete="off"
+      [formField]="formulario.busca"
+    />
+  </div>
+  <div>
+    <label for="uf" class="rotulo">UF</label>
+    <select id="uf" class="campo" [formField]="formulario.uf">
+      <option value="">Todas</option>
+      @for (sigla of ufs; track sigla) {
+        <option [value]="sigla">{{ sigla }}</option>
+      }
+    </select>
+  </div>
+  @if (sessao.ehGestor()) {
+    <div>
+      <label for="situacao" class="rotulo">Situação</label>
+      <select id="situacao" class="campo" [formField]="formulario.situacao">
+        <option value="todos">Todos</option>
+        <option value="ativos">Ativos</option>
+        <option value="inativos">Inativos</option>
+      </select>
+    </div>
+    <div class="flex items-end sm:col-span-2 lg:col-span-4">
+      <label class="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-100">
+        <input type="checkbox" class="size-5" [formField]="formulario.soIncompletos" />
+        Só cadastros incompletos (sem CPF/CNPJ)
+      </label>
+    </div>
+  }
+  <div class="sm:col-span-2 lg:col-span-4">
+    <button type="submit" class="botao-primario w-full sm:w-auto">Buscar</button>
+  </div>
+</form>
+
+<section class="mt-4" aria-live="polite" aria-busy="{{ resultado.isLoading() }}">
+  @if (resultado.error()) {
+    <div class="alerta-erro" role="alert">
+      <p>Não foi possível carregar os clientes.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="tentarDeNovo()">Tentar de novo</button>
+    </div>
+  } @else if (resultado.isLoading() && !resultado.hasValue()) {
+    <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (itens().length === 0) {
+    <p class="cartao text-slate-700 dark:text-slate-200">Nenhum cliente encontrado.</p>
+  } @else {
+    <ul class="grid gap-3 md:hidden">
+      @for (c of itens(); track c.id) {
+        <li class="cartao">
+          <a [routerLink]="['/clientes', c.id]" class="block focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+            <span class="block text-lg font-semibold">{{ c.nomeRazaoSocial }}</span>
+            @if (c.nomeFantasia) {
+              <span class="block text-sm text-slate-700 dark:text-slate-200">{{ c.nomeFantasia }}</span>
+            }
+            <span class="mt-1 block text-sm text-slate-700 dark:text-slate-200">
+              {{ c.documento ? documento(c.documento) : 'Sem CPF/CNPJ' }}@if (c.cidade) {
+                · {{ c.cidade }}{{ c.uf ? '/' + c.uf : '' }}
+              }
+            </span>
+            <span class="mt-2 flex flex-wrap gap-1">
+              @if (c.cadastroIncompleto) {
+                <span class="etiqueta">Incompleto</span>
+              }
+              @if (!c.ativo) {
+                <span class="etiqueta">Inativo</span>
+              }
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="hidden overflow-x-auto md:block">
+      <table class="cartao w-full text-left text-sm">
+        <caption class="sr-only">Clientes</caption>
+        <thead>
+          <tr class="border-b border-slate-300 dark:border-slate-700">
+            <th scope="col" class="p-2">Nome / razão social</th>
+            <th scope="col" class="p-2">CPF/CNPJ</th>
+            <th scope="col" class="p-2">Cidade/UF</th>
+            <th scope="col" class="p-2">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of itens(); track c.id) {
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <td class="p-2">
+                <a [routerLink]="['/clientes', c.id]" class="font-medium underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+                  {{ c.nomeRazaoSocial }}
+                </a>
+                @if (c.nomeFantasia) {
+                  <span class="block text-slate-700 dark:text-slate-200">{{ c.nomeFantasia }}</span>
+                }
+              </td>
+              <td class="p-2">{{ c.documento ? documento(c.documento) : '—' }}</td>
+              <td class="p-2">{{ c.cidade ?? '—' }}{{ c.uf ? '/' + c.uf : '' }}</td>
+              <td class="p-2">
+                @if (c.cadastroIncompleto) {
+                  <span class="etiqueta">Incompleto</span>
+                }
+                @if (!c.ativo) {
+                  <span class="etiqueta">Inativo</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <jvd-paginacao [pagina]="pagina()" [tamanho]="tamanho()" [total]="total()" (mudar)="irParaPagina($event)" />
+  }
+</section>
