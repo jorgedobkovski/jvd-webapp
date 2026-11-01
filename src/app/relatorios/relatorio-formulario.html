@@ -25,10 +25,11 @@
       @if (semCliente()) {
         <p class="campo-erro" role="alert">Escolha o cliente.</p>
       }
+      <p><button type="button" class="botao-secundario" (click)="janela.set('cliente')">Cadastrar novo cliente</button></p>
 
       <div>
         <label for="equipamento" class="rotulo">Equipamento *</label>
-        <select id="equipamento" class="campo" [formField]="formulario.equipamentoId" [attr.aria-invalid]="formulario.equipamentoId().touched() && formulario.equipamentoId().invalid()" aria-describedby="equipamento-erro">
+        <select #campoEquipamento id="equipamento" class="campo" [formField]="formulario.equipamentoId" [attr.aria-invalid]="formulario.equipamentoId().touched() && formulario.equipamentoId().invalid()" aria-describedby="equipamento-erro">
           <option value="">{{ !cliente() ? 'Escolha o cliente primeiro' : carregandoEquipamentos() ? 'Carregando…' : equipamentos().length === 0 ? 'Este cliente não tem equipamento ativo' : 'Escolha o equipamento' }}</option>
           @for (e of equipamentos(); track e.id) {
             <option [value]="e.id">{{ e.descricao }}{{ e.numeroSerie ? ' — série ' + e.numeroSerie : '' }}{{ e.ativo ? '' : ' (inativo)' }}</option>
@@ -41,10 +42,14 @@
             }
           }
         </p>
-        @if (cliente() && !carregandoEquipamentos() && equipamentos().length === 0) {
-          <p class="text-sm"><a routerLink="/equipamentos/novo" [queryParams]="{ clienteId: cliente()!.id }" class="underline">Cadastrar equipamento para este cliente</a></p>
+        @if (cliente()) {
+          <p class="mt-2"><button type="button" class="botao-secundario" (click)="janela.set('equipamento')">Cadastrar equipamento para este cliente</button></p>
         }
       </div>
+
+      @for (mensagem of avisosDeCadastro(); track $index) {
+        <p class="aviso" role="status">{{ mensagem }}</p>
+      }
     </section>
 
     <section class="cartao grid gap-4 sm:grid-cols-2" aria-labelledby="sec-servico">
@@ -234,4 +239,11 @@
       <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Salvando…' : 'Salvar rascunho' }}</button>
     </div>
   </form>
+}
+
+@if (janela() === 'cliente') {
+  <jvd-cliente-em-janela (criado)="aoCriarCliente($event)" (fechar)="janela.set(null)" />
+}
+@if (janela() === 'equipamento' && cliente(); as escolhido) {
+  <jvd-equipamento-em-janela [clienteId]="escolhido.id" [clienteNome]="escolhido.nome" (criado)="aoCriarEquipamento($event)" (fechar)="janela.set(null)" />
 }

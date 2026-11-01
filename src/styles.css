@@ -34,4 +34,7 @@
   .etiqueta {
     @apply inline-block rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100;
   }
+  .janela {
+    @apply m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-xl bg-white p-4 text-slate-900 shadow-xl ring-1 ring-slate-300 backdrop:bg-slate-950/60 dark:bg-slate-900 dark:text-slate-50 dark:ring-slate-700;
+  }
 }

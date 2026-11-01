@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormField, form, maxLength, required, submit } from '@angular/forms/signals';
+import { form, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AvisosDoCadastro, avisosRecebidos } from '../../compartilhado/avisos-do-cadastro';
 import { formatarDocumento } from '../../compartilhado/formatadores';
@@ -7,6 +7,7 @@ import { Aviso } from '../../compartilhado/modelos';
 import { lerErro } from '../../core/erros';
 import { Sessao } from '../../core/sessao';
 import { Cliente, ClientesApi } from '../clientes/clientes-api';
+import { CamposDeEquipamento, CamposDoEquipamento, EQUIPAMENTO_VAZIO, regrasDoEquipamento } from './campos-do-equipamento';
 import { DadosDoEquipamento, Equipamento, EquipamentosApi } from './equipamentos-api';
 
 interface ClienteEscolhido {
@@ -20,7 +21,7 @@ interface ClienteEscolhido {
  */
 @Component({
   selector: 'jvd-equipamento-formulario',
-  imports: [FormField, RouterLink, AvisosDoCadastro],
+  imports: [CamposDoEquipamento, RouterLink, AvisosDoCadastro],
   templateUrl: './equipamento-formulario.html',
 })
 export class EquipamentoFormulario {
@@ -34,14 +35,8 @@ export class EquipamentoFormulario {
   protected readonly id = this.rota.snapshot.paramMap.get('id');
   protected readonly edicao = this.id !== null;
 
-  protected readonly modelo = signal({ descricao: '', numeroSerie: '', numeroInmetro: '', observacoes: '' });
-  protected readonly formulario = form(this.modelo, (e) => {
-    required(e.descricao, { message: 'Informe a descrição (tipo ou modelo).' });
-    maxLength(e.descricao, 200, { message: 'Use no máximo 200 caracteres.' });
-    maxLength(e.numeroSerie, 60, { message: 'Use no máximo 60 caracteres.' });
-    maxLength(e.numeroInmetro, 40, { message: 'Use no máximo 40 caracteres.' });
-    maxLength(e.observacoes, 1000, { message: 'Use no máximo 1000 caracteres.' });
-  });
+  protected readonly modelo = signal<CamposDeEquipamento>({ ...EQUIPAMENTO_VAZIO });
+  protected readonly formulario = form(this.modelo, regrasDoEquipamento);
 
   // Cliente (escolhido por busca)
   protected readonly cliente = signal<ClienteEscolhido | null>(null);

@@ -1,29 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormField, email, form, maxLength, required, submit } from '@angular/forms/signals';
+import { form, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { UFS } from '../../compartilhado/formatadores';
 import { lerErro } from '../../core/erros';
+import { CamposDoCliente, CLIENTE_VAZIO, regrasDoCliente } from './campos-do-cliente';
 import { Cliente, ClientesApi, DadosDoCliente } from './clientes-api';
-
-const VAZIO: DadosDoCliente = {
-  nomeRazaoSocial: '',
-  nomeFantasia: '',
-  documento: '',
-  inscricaoEstadualRg: '',
-  logradouro: '',
-  numero: '',
-  bairro: '',
-  cep: '',
-  cidade: '',
-  uf: '',
-  telefone: '',
-  email: '',
-};
 
 /** Cadastro e edição de cliente (a rota com `:id` edita). Limites e regras: IA/Specs/CLIENTES_EQUIPAMENTOS.md. */
 @Component({
   selector: 'jvd-cliente-formulario',
-  imports: [FormField, RouterLink],
+  imports: [CamposDoCliente, RouterLink],
   templateUrl: './cliente-formulario.html',
 })
 export class ClienteFormulario {
@@ -31,26 +16,11 @@ export class ClienteFormulario {
   private readonly router = inject(Router);
   private readonly rota = inject(ActivatedRoute);
 
-  protected readonly ufs = UFS;
   protected readonly id = this.rota.snapshot.paramMap.get('id');
   protected readonly edicao = this.id !== null;
 
-  protected readonly modelo = signal<DadosDoCliente>({ ...VAZIO });
-  protected readonly formulario = form(this.modelo, (c) => {
-    required(c.nomeRazaoSocial, { message: 'Informe o nome ou a razão social.' });
-    maxLength(c.nomeRazaoSocial, 200, { message: 'Use no máximo 200 caracteres.' });
-    maxLength(c.nomeFantasia, 200, { message: 'Use no máximo 200 caracteres.' });
-    maxLength(c.documento, 40, { message: 'Documento longo demais.' });
-    maxLength(c.inscricaoEstadualRg, 30, { message: 'Use no máximo 30 caracteres.' });
-    maxLength(c.logradouro, 150, { message: 'Use no máximo 150 caracteres.' });
-    maxLength(c.numero, 20, { message: 'Use no máximo 20 caracteres.' });
-    maxLength(c.bairro, 80, { message: 'Use no máximo 80 caracteres.' });
-    maxLength(c.cep, 20, { message: 'CEP longo demais.' });
-    maxLength(c.cidade, 80, { message: 'Use no máximo 80 caracteres.' });
-    maxLength(c.telefone, 30, { message: 'Use no máximo 30 caracteres.' });
-    maxLength(c.email, 254, { message: 'E-mail longo demais.' });
-    email(c.email, { message: 'Informe um e-mail válido.', when: ({ value }) => value() !== '' });
-  });
+  protected readonly modelo = signal<DadosDoCliente>({ ...CLIENTE_VAZIO });
+  protected readonly formulario = form(this.modelo, regrasDoCliente);
 
   private readonly versao = signal('');
   protected readonly carregando = signal(this.edicao);
