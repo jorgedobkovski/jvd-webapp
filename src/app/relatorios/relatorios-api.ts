@@ -100,6 +100,34 @@ export interface DadosDoRascunho {
   catalogoServicoId: string | null;
 }
 
+/** Corpo da retificação: cliente, balança e executor NÃO mudam por aqui (a API também ignora). */
+export interface DadosDaRetificacao {
+  motivo: string;
+  atualizarDadosDeCadastro: boolean;
+  tipoServico: TipoServico;
+  dataServico: string;
+  servicoExecutado: string;
+  observacoes: string;
+  verificacaoAnteriorData: string | null;
+  verificacaoAnteriorCertificado: string;
+  numeroSeloReparador: string;
+  garantiaDias: number;
+  total: number;
+  desconto: number;
+  catalogoServicoId: string | null;
+}
+
+/** Uma retificação do histórico: JSON só com os campos que mudaram (antes e depois); pode conter dados pessoais. */
+export interface RevisaoDoRelatorio {
+  revisao: number;
+  retificadoEm: string;
+  retificadoPor: string;
+  retificadoPorNome: string;
+  motivo: string;
+  dadosAnteriores: unknown;
+  dadosNovos: unknown;
+}
+
 export interface FiltroDeRelatorios {
   numero?: number;
   status?: StatusRelatorio;
@@ -164,6 +192,18 @@ export class RelatoriosApi {
 
   emitir(id: string, versao: string): Promise<RelatorioDetalhe> {
     return firstValueFrom(this.http.post<RelatorioDetalhe>(`${this.url}/${encodeURIComponent(id)}/emitir`, { versao }));
+  }
+
+  retificar(id: string, dados: DadosDaRetificacao, versao: string): Promise<RelatorioDetalhe> {
+    return firstValueFrom(this.http.post<RelatorioDetalhe>(`${this.url}/${encodeURIComponent(id)}/retificar`, { ...dados, versao }));
+  }
+
+  cancelar(id: string, motivo: string, versao: string): Promise<RelatorioDetalhe> {
+    return firstValueFrom(this.http.post<RelatorioDetalhe>(`${this.url}/${encodeURIComponent(id)}/cancelar`, { motivo, versao }));
+  }
+
+  listarRevisoes(id: string): Promise<RevisaoDoRelatorio[]> {
+    return firstValueFrom(this.http.get<RevisaoDoRelatorio[]>(`${this.url}/${encodeURIComponent(id)}/revisoes`));
   }
 
   /** O PDF exige o token; por isso vem como arquivo na memória (não como link direto) e o chamador o baixa. */

@@ -22,6 +22,12 @@
         <span class="etiqueta">{{ tipo(r.tipoServico) }}</span>
       </p>
     </div>
+    @if (ehEmitido()) {
+      <div class="flex flex-wrap gap-2">
+        <a [routerLink]="['/relatorios', r.id, 'retificar']" class="botao-secundario">Retificar</a>
+        <button type="button" class="botao-secundario" (click)="confirmando.set('cancelar')">Cancelar relatório</button>
+      </div>
+    }
     @if (ehRascunho()) {
       <div class="flex flex-wrap gap-2">
         <a [routerLink]="['/relatorios', r.id, 'editar']" class="botao-secundario">Editar</a>
@@ -48,6 +54,33 @@
         <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
       </div>
     </div>
+  }
+  @if (confirmando() === 'cancelar') {
+    <form class="aviso mt-3" role="alertdialog" aria-labelledby="titulo-cancelar" novalidate (submit)="$event.preventDefault(); cancelar()">
+      <p id="titulo-cancelar" class="font-semibold">Cancelar o relatório nº {{ r.numeroFormatado }}?</p>
+      <p>O número <strong>continua existindo e nunca é reutilizado</strong>; o relatório deixa de valer e não pode ser retificado. O motivo fica registrado.</p>
+      <label for="motivo-cancelamento" class="rotulo mt-2">Motivo do cancelamento *</label>
+      <textarea
+        #campoMotivo
+        id="motivo-cancelamento"
+        rows="3"
+        class="campo"
+        [formField]="motivoFormulario.motivo"
+        [attr.aria-invalid]="motivoFormulario.motivo().touched() && motivoFormulario.motivo().invalid()"
+        aria-describedby="motivo-cancelamento-erro"
+      ></textarea>
+      <p id="motivo-cancelamento-erro" class="campo-erro">
+        @if (motivoFormulario.motivo().touched()) {
+          @for (e of motivoFormulario.motivo().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+      <div class="mt-2 flex gap-2">
+        <button type="submit" class="botao-perigo" [disabled]="trabalhando()">{{ trabalhando() ? 'Cancelando…' : 'Sim, cancelar relatório' }}</button>
+        <button type="button" class="botao-secundario" (click)="confirmando.set(null)">Voltar</button>
+      </div>
+    </form>
   }
   @if (confirmando() === 'descartar') {
     <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar descarte">
@@ -152,4 +185,28 @@
       <dd class="text-lg font-semibold">Total geral {{ reais(r.totalGeral) }}</dd>
     </div>
   </dl>
+
+  @if (revisoes().length > 0 || erroDoHistorico()) {
+    <section class="mt-6" aria-labelledby="sec-historico">
+      <h2 id="sec-historico" class="text-xl font-semibold">Histórico de retificações</h2>
+      @if (erroDoHistorico()) {
+        <p class="alerta-erro mt-2" role="alert">{{ erroDoHistorico() }}</p>
+      }
+      <ol class="mt-2 grid gap-3">
+        @for (v of revisoes(); track v.revisao) {
+          <li class="cartao">
+            <p class="font-semibold">Revisão {{ v.revisao }} · {{ v.quando }} · {{ v.porNome }}</p>
+            <p class="mt-1">Motivo: {{ v.motivo }}</p>
+            @if (v.mudancas.length > 0) {
+              <ul class="mt-2 grid gap-1 text-sm">
+                @for (m of v.mudancas; track m.campo) {
+                  <li><span class="font-medium">{{ m.campo }}:</span> {{ m.antes }} → {{ m.depois }}</li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ol>
+    </section>
+  }
 }
