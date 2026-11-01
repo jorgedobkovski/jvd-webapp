@@ -1,0 +1,100 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{{ titulo() }}</h1>
+  <a routerLink="/catalogo" class="botao-secundario">Voltar</a>
+</div>
+
+@if (carregando()) {
+  <p class="mt-4 text-slate-700 dark:text-slate-200">Carregando…</p>
+} @else if (semCadastro()) {
+  <div class="alerta-erro mt-4" role="alert">
+    <ul class="list-inside list-disc">
+      @for (mensagem of erros(); track $index) {
+        <li>{{ mensagem }}</li>
+      }
+    </ul>
+  </div>
+} @else {
+  @if (servico(); as atual) {
+    <p class="mt-2 flex flex-wrap items-center gap-2">
+      @if (!atual.ativo) {
+        <span class="etiqueta">Inativo</span>
+      }
+      @if (!confirmando()) {
+        <button type="button" class="botao-secundario" (click)="confirmando.set(true)">{{ atual.ativo ? 'Desativar' : 'Reativar' }}</button>
+      }
+    </p>
+    @if (confirmando()) {
+      <div class="aviso mt-3" role="alertdialog" aria-label="Confirmar alteração de situação">
+        <p>{{ atual.ativo ? 'Desativar este serviço? Técnicos deixam de vê-lo ao preencher relatórios.' : 'Reativar este serviço?' }}</p>
+        <div class="mt-2 flex gap-2">
+          <button type="button" [class]="atual.ativo ? 'botao-perigo' : 'botao-primario'" [disabled]="enviando()" (click)="alternarSituacao(!atual.ativo)">
+            {{ atual.ativo ? 'Sim, desativar' : 'Sim, reativar' }}
+          </button>
+          <button type="button" class="botao-secundario" (click)="confirmando.set(false)">Voltar</button>
+        </div>
+      </div>
+    }
+  }
+
+  <form class="cartao mt-4 grid gap-4" novalidate (submit)="$event.preventDefault(); salvar()">
+    <div>
+      <label for="descricao" class="rotulo">Descrição *</label>
+      <input id="descricao" class="campo" autocomplete="off" [formField]="formulario.descricao" [attr.aria-invalid]="formulario.descricao().touched() && formulario.descricao().invalid()" aria-describedby="descricao-erro" />
+      <p id="descricao-erro" class="campo-erro">
+        @if (formulario.descricao().touched()) {
+          @for (e of formulario.descricao().errors(); track e.kind) {
+            <span class="block">{{ e.message }}</span>
+          }
+        }
+      </p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="codigo" class="rotulo">Código de origem</label>
+        <input id="codigo" class="campo" autocomplete="off" [formField]="formulario.codigoOrigem" />
+      </div>
+      <div>
+        <label for="preco" class="rotulo">Preço sugerido (R$)</label>
+        <input id="preco" class="campo" inputmode="decimal" autocomplete="off" aria-describedby="preco-ajuda preco-erro" [formField]="formulario.preco" [attr.aria-invalid]="formulario.preco().touched() && formulario.preco().invalid()" />
+        <p id="preco-ajuda" class="mt-1 text-sm text-slate-600 dark:text-slate-300">Opcional. O técnico pode ajustar o valor ao preencher o relatório.</p>
+        <p id="preco-erro" class="campo-erro">
+          @if (formulario.preco().touched()) {
+            @for (e of formulario.preco().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+    </div>
+
+    <div role="alert">
+      @if (conflito()) {
+        <div class="alerta-erro">
+          <p>Outra pessoa alterou este serviço enquanto você editava. Recarregue os dados atuais e refaça sua alteração.</p>
+          @if (id) {
+            <button type="button" class="botao-secundario mt-2" (click)="carregar(id)">Recarregar</button>
+          }
+        </div>
+      }
+      @if (erros().length > 0) {
+        <div class="alerta-erro">
+          <ul class="list-inside list-disc">
+            @for (mensagem of erros(); track $index) {
+              <li>{{ mensagem }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    @if (salvo()) {
+      <p class="rounded-lg border border-green-700 bg-green-50 p-3 text-sm text-green-900 dark:border-green-400 dark:bg-green-950 dark:text-green-100" role="status">Serviço salvo.</p>
+    }
+    <jvd-avisos-do-cadastro [avisos]="avisos()" rotaBase="/catalogo" />
+
+    <div>
+      <button type="submit" class="botao-primario w-full sm:w-auto" [disabled]="enviando()">{{ enviando() ? 'Salvando…' : 'Salvar' }}</button>
+    </div>
+  </form>
+}
