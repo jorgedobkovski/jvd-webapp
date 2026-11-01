@@ -1,0 +1,88 @@
+<main class="flex min-h-dvh items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+  <section class="w-full max-w-sm rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Trocar senha</h1>
+    @if (obrigatoria()) {
+      <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">Sua senha é provisória. Crie uma nova para continuar.</p>
+    }
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Mínimo de 10 caracteres, com maiúscula, minúscula e número.</p>
+
+    <form class="mt-6 space-y-4" novalidate (submit)="$event.preventDefault(); trocar()">
+      <div>
+        <label for="senha-atual" class="block text-sm font-medium text-slate-800 dark:text-slate-100">Senha atual</label>
+        <input
+          id="senha-atual"
+          type="password"
+          autocomplete="current-password"
+          class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-base text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50"
+          [formField]="formulario.senhaAtual"
+          [attr.aria-invalid]="formulario.senhaAtual().touched() && formulario.senhaAtual().invalid()"
+          aria-describedby="senha-atual-erro"
+        />
+        <p id="senha-atual-erro" class="mt-1 text-sm text-red-700 dark:text-red-300">
+          @if (formulario.senhaAtual().touched()) {
+            @for (e of formulario.senhaAtual().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="nova-senha" class="block text-sm font-medium text-slate-800 dark:text-slate-100">Nova senha</label>
+        <input
+          id="nova-senha"
+          type="password"
+          autocomplete="new-password"
+          class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-base text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50"
+          [formField]="formulario.novaSenha"
+          [attr.aria-invalid]="formulario.novaSenha().touched() && formulario.novaSenha().invalid()"
+          aria-describedby="nova-senha-erro"
+        />
+        <p id="nova-senha-erro" class="mt-1 text-sm text-red-700 dark:text-red-300">
+          @if (formulario.novaSenha().touched()) {
+            @for (e of formulario.novaSenha().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <div>
+        <label for="confirmacao" class="block text-sm font-medium text-slate-800 dark:text-slate-100">Repita a nova senha</label>
+        <input
+          id="confirmacao"
+          type="password"
+          autocomplete="new-password"
+          class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-base text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50"
+          [formField]="formulario.confirmacao"
+          [attr.aria-invalid]="formulario.confirmacao().touched() && formulario.confirmacao().invalid()"
+          aria-describedby="confirmacao-erro"
+        />
+        <p id="confirmacao-erro" class="mt-1 text-sm text-red-700 dark:text-red-300">
+          @if (formulario.confirmacao().touched()) {
+            @for (e of formulario.confirmacao().errors(); track e.kind) {
+              <span class="block">{{ e.message }}</span>
+            }
+          }
+        </p>
+      </div>
+
+      <p role="alert" class="text-sm font-medium text-red-700 dark:text-red-300">{{ erro() }}</p>
+
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-blue-700 px-4 py-2.5 text-base font-semibold text-white hover:bg-blue-800 focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 disabled:opacity-60"
+        [disabled]="enviando()"
+      >
+        {{ enviando() ? 'Salvando…' : 'Salvar nova senha' }}
+      </button>
+      <button
+        type="button"
+        class="w-full rounded-lg px-4 py-2.5 text-base font-medium text-slate-800 underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 dark:text-slate-100"
+        (click)="sair()"
+      >
+        Sair
+      </button>
+    </form>
+  </section>
+</main>
