@@ -11,7 +11,9 @@ import { Sessao } from '../../core/sessao';
     <p class="mt-2 text-slate-700 dark:text-slate-200">
       {{ sessao.ehGestor() ? 'Você acessa todos os cadastros e relatórios.' : 'Você acessa os relatórios dos serviços que executou.' }}
     </p>
+    <p class="mt-4"><a routerLink="/relatorios/novo" class="botao-primario w-full sm:w-auto">Novo relatório</a></p>
     <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+      <li><a routerLink="/relatorios" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">{{ sessao.ehGestor() ? 'Relatórios' : 'Meus relatórios' }}</a></li>
       <li><a routerLink="/clientes" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Clientes</a></li>
       <li><a routerLink="/equipamentos" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Equipamentos</a></li>
       @if (sessao.ehGestor()) {
@@ -20,7 +22,7 @@ import { Sessao } from '../../core/sessao';
         <li><a routerLink="/usuarios" class="cartao block text-lg font-semibold focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">Usuários</a></li>
       }
     </ul>
-    <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">As telas de relatórios chegam nas próximas etapas.</p>
+
   `,
 })
 export class Inicio {

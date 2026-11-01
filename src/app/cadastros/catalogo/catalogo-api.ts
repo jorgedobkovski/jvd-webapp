@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Aviso } from '../../compartilhado/modelos';
+import { Aviso, Pagina } from '../../compartilhado/modelos';
 import { API_URL } from '../../core/api-url';
 
 export interface Servico {
@@ -47,6 +47,12 @@ export function paramsDoCatalogo(f: FiltroDoCatalogo): Record<string, string | n
 export class CatalogoApi {
   private readonly http = inject(HttpClient);
   readonly url = `${inject(API_URL)}/catalogo-servicos`;
+
+  /** Serviços ativos (até 100) para sugerir o texto e o preço no relatório. O técnico só recebe ativos. */
+  async listarAtivos(): Promise<Servico[]> {
+    const pagina = await firstValueFrom(this.http.get<Pagina<Servico>>(this.url, { params: paramsDoCatalogo({ ativo: true, tamanho: 100 }) }));
+    return pagina.itens;
+  }
 
   obter(id: string): Promise<Servico> {
     return firstValueFrom(this.http.get<Servico>(`${this.url}/${encodeURIComponent(id)}`));

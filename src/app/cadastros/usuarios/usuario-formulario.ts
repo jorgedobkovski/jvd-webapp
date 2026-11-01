@@ -1,5 +1,5 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { FormField, email, form, maxLength, required, submit } from '@angular/forms/signals';
+import { FormField, disabled, email, form, maxLength, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { gerarSenhaProvisoria } from '../../compartilhado/senha-provisoria';
 import { lerErro } from '../../core/erros';
@@ -34,6 +34,8 @@ export class UsuarioFormulario {
     email(u.email, { message: 'Informe um e-mail válido.' });
     maxLength(u.email, 254, { message: 'E-mail longo demais.' });
     maxLength(u.cpf, 20, { message: 'CPF longo demais.' });
+    // O gestor não rebaixa o próprio perfil (a API também recusa com 409).
+    disabled(u.perfil, { when: () => this.souEu() });
   });
 
   protected readonly usuario = signal<UsuarioDoSistema | null>(null);
@@ -53,7 +55,7 @@ export class UsuarioFormulario {
 
   protected readonly titulo = computed(() => (this.edicao ? 'Editar usuário' : 'Novo usuário'));
   /** O gestor não desativa nem redefine a própria senha por aqui (a API também recusa). */
-  protected readonly souEu = computed(() => this.id !== null && this.id === this.sessao.usuario()?.id);
+  protected readonly souEu = computed(() => this.id !== null && this.id.toLowerCase() === this.sessao.usuario()?.id.toLowerCase());
   protected readonly mudouPerfil = computed(() => this.edicao && this.perfilOriginal() !== null && this.modelo().perfil !== this.perfilOriginal());
 
   constructor() {

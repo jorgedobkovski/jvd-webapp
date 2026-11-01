@@ -1,0 +1,125 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{{ sessao.ehGestor() ? 'Relatórios' : 'Meus relatórios' }}</h1>
+  <a routerLink="/relatorios/novo" class="botao-primario">Novo relatório</a>
+</div>
+
+<form class="cartao mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" (submit)="$event.preventDefault(); buscar()" role="search">
+  <div>
+    <label for="numero" class="rotulo">Número</label>
+    <input id="numero" class="campo" inputmode="numeric" autocomplete="off" placeholder="Ex.: 123" [formField]="formulario.numero" [attr.aria-invalid]="formulario.numero().invalid()" aria-describedby="numero-erro" />
+    <p id="numero-erro" class="campo-erro">
+      @for (e of formulario.numero().errors(); track e.kind) {
+        <span class="block">{{ e.message }}</span>
+      }
+    </p>
+  </div>
+  <div>
+    <label for="status" class="rotulo">Situação</label>
+    <select id="status" class="campo" [formField]="formulario.status">
+      <option value="">Todas</option>
+      <option value="Rascunho">Rascunho</option>
+      <option value="Emitido">Emitido</option>
+      <option value="Cancelado">Cancelado</option>
+    </select>
+  </div>
+  <div>
+    <label for="tipo" class="rotulo">Tipo de serviço</label>
+    <select id="tipo" class="campo" [formField]="formulario.tipo">
+      <option value="">Todos</option>
+      @for (t of tipos; track t.valor) {
+        <option [value]="t.valor">{{ t.rotulo }}</option>
+      }
+    </select>
+  </div>
+  <div class="hidden lg:block"></div>
+  <div>
+    <label for="de" class="rotulo">Serviço de</label>
+    <input id="de" type="date" class="campo" [formField]="formulario.de" />
+  </div>
+  <div>
+    <label for="ate" class="rotulo">até</label>
+    <input id="ate" type="date" class="campo" [formField]="formulario.ate" [attr.aria-invalid]="formulario.ate().invalid()" aria-describedby="ate-erro" />
+    <p id="ate-erro" class="campo-erro">
+      @for (e of formulario.ate().errors(); track e.kind) {
+        <span class="block">{{ e.message }}</span>
+      }
+    </p>
+  </div>
+  <div class="sm:col-span-2 lg:col-span-4">
+    <button type="submit" class="botao-primario w-full sm:w-auto">Buscar</button>
+  </div>
+</form>
+
+<section class="mt-4" aria-live="polite" aria-busy="{{ resultado.isLoading() }}">
+  @if (resultado.error()) {
+    <div class="alerta-erro" role="alert">
+      <p>Não foi possível carregar os relatórios.</p>
+      <button type="button" class="botao-secundario mt-2" (click)="tentarDeNovo()">Tentar de novo</button>
+    </div>
+  } @else if (resultado.isLoading() && !resultado.hasValue()) {
+    <p class="text-slate-700 dark:text-slate-200">Carregando…</p>
+  } @else if (itens().length === 0) {
+    <p class="cartao text-slate-700 dark:text-slate-200">Nenhum relatório encontrado.</p>
+  } @else {
+    <ul class="grid gap-3 md:hidden">
+      @for (r of itens(); track r.id) {
+        <li class="cartao">
+          <a [routerLink]="['/relatorios', r.id]" class="block focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+            <span class="flex items-center justify-between gap-2">
+              <span class="text-lg font-semibold">{{ r.numeroFormatado ? 'Nº ' + r.numeroFormatado : 'Rascunho' }}</span>
+              <span class="etiqueta">{{ estado(r) }}</span>
+            </span>
+            <span class="mt-1 block">{{ r.clienteNome }}</span>
+            <span class="block text-sm text-slate-700 dark:text-slate-200">{{ r.equipamentoDescricao }}</span>
+            <span class="mt-1 block text-sm text-slate-700 dark:text-slate-200">{{ data(r.dataServico) }} · {{ tipo(r.tipoServico) }} · {{ reais(r.totalGeral) }}</span>
+            @if (sessao.ehGestor()) {
+              <span class="block text-sm text-slate-700 dark:text-slate-200">Executor: {{ r.tecnicoNome }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="hidden overflow-x-auto md:block">
+      <table class="cartao w-full text-left text-sm">
+        <caption class="sr-only">Relatórios de serviço</caption>
+        <thead>
+          <tr class="border-b border-slate-300 dark:border-slate-700">
+            <th scope="col" class="p-2">Nº</th>
+            <th scope="col" class="p-2">Data</th>
+            <th scope="col" class="p-2">Cliente</th>
+            <th scope="col" class="p-2">Equipamento</th>
+            <th scope="col" class="p-2">Tipo</th>
+            @if (sessao.ehGestor()) {
+              <th scope="col" class="p-2">Executor</th>
+            }
+            <th scope="col" class="p-2">Total</th>
+            <th scope="col" class="p-2">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of itens(); track r.id) {
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <td class="p-2">
+                <a [routerLink]="['/relatorios', r.id]" class="font-medium underline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700">
+                  {{ r.numeroFormatado ?? 'Rascunho' }}
+                </a>
+              </td>
+              <td class="p-2">{{ data(r.dataServico) }}</td>
+              <td class="p-2">{{ r.clienteNome }}</td>
+              <td class="p-2">{{ r.equipamentoDescricao }}</td>
+              <td class="p-2">{{ tipo(r.tipoServico) }}</td>
+              @if (sessao.ehGestor()) {
+                <td class="p-2">{{ r.tecnicoNome }}</td>
+              }
+              <td class="p-2">{{ reais(r.totalGeral) }}</td>
+              <td class="p-2"><span class="etiqueta">{{ estado(r) }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <jvd-paginacao [pagina]="pagina()" [tamanho]="tamanho()" [total]="total()" (mudar)="irParaPagina($event)" />
+  }
+</section>
